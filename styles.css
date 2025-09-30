@@ -94,3 +94,36 @@ body {
 /* Keep debug outline only when you need it */
 body.debug .tile { outline: 2px dashed rgba(255,0,200,.6); }
 body.debug .tile.done::after { opacity: .25; }
+:root{
+  --board-top: 26%;        /* nudge start down/up as before */
+  --board-left: 50%;
+  --board-width: 83%;
+
+  /* NEW: precision controls */
+  --board-scale-y: 0.96;   /* <— compress height a tiny bit (1.00 = no change) */
+  --gap-x: 8px;            /* horizontal gap between columns */
+  --gap-y: 8px;            /* vertical gap between rows (can differ from gap-x) */
+}
+
+.board{
+  position: absolute;
+  top: var(--board-top);
+  left: var(--board-left);
+  transform: translateX(-50%) scaleY(var(--board-scale-y));
+  transform-origin: top center;           /* scale from the top edge */
+  width: var(--board-width);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  column-gap: var(--gap-x);
+  row-gap: var(--gap-y);
+  background: transparent;
+  border: none;
+}
+
+/* Keep the overlay totally clear */
+.bg-wrap, .board, .tile{
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
