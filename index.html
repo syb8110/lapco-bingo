@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LAPCo Bingo (Starter)</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header class="top">
+    <div class="title">LAPCo Bingo</div>
+    <div class="actions">
+      <input id="url" class="env" placeholder="SUPABASE URL (https://XYZ.supabase.co)" />
+      <input id="key" class="env" placeholder="Publishable (anon) key" />
+      <button id="saveEnv">Save</button>
+      <button id="signin">Sign in with Google</button>
+      <button id="signout" class="ghost">Sign out</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="status">
+      <div id="who">Not signed in</div>
+      <div id="stats"></div>
+    </section>
+
+    <section class="board-wrap">
+      <div id="board" class="board"></div>
+    </section>
+
+    <section class="footer">
+      <details>
+        <summary>Debug session</summary>
+        <pre id="debug">(none)</pre>
+      </details>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
