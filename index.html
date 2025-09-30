@@ -8,20 +8,23 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+
+  <!-- Media waiver (shown once after login) -->
   <div id="consentModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center">
-  <div style="background:#111;border:1px solid #333;border-radius:12px;max-width:520px;width:90%;padding:18px">
-    <h3 style="margin:0 0 8px">Media Waiver</h3>
-    <p style="margin:0 0 12px;line-height:1.35">
-      I consent to LAPCo using my submitted photos, videos, display name, and bingo progress for promotional purposes
-      (website, social media, in-studio). I can withdraw consent anytime by emailing powercatpilates@gmail.com.
-    </p>
-    <button id="consentAgree" style="padding:10px 14px;border-radius:10px;border:none;background:#6d4bff;color:#fff;font-weight:800;cursor:pointer">I Agree</button>
+    <div style="background:#111;border:1px solid #333;border-radius:12px;max-width:520px;width:90%;padding:18px">
+      <h3 style="margin:0 0 8px">Media Waiver</h3>
+      <p style="margin:0 0 12px;line-height:1.35">
+        I consent to LAPCo using my submitted photos, videos, display name, and bingo progress for promotional purposes
+        (website, social media, in-studio). I can withdraw consent anytime by emailing powercatpilates@gmail.com.
+      </p>
+      <button id="consentAgree" style="padding:10px 14px;border-radius:10px;border:none;background:#6d4bff;color:#fff;font-weight:800;cursor:pointer">I Agree</button>
+    </div>
   </div>
-</div>
 
   <header class="top">
     <div class="title">LAPCo Bingo</div>
     <div class="actions">
+      <!-- If you plan to hardcode keys in app.js, these can be removed. Keeping for later if you want UI-based config. -->
       <input id="url" class="env" placeholder="SUPABASE URL (https://XYZ.supabase.co)" />
       <input id="key" class="env" placeholder="Publishable (anon) key" />
       <button id="saveEnv">Save</button>
@@ -36,29 +39,24 @@
       <div id="stats"></div>
     </section>
 
-  <div class="bg-wrap">
-    <img src="/october-halloween-bingo.png" alt="October Bingo" class="bg" />
-    <div id="board" class="board"></div>
-  </div>
-<div id="claimbar" style="max-width:900px;margin:10px auto 0;text-align:center"></div>
+    <!-- Background art with overlay board -->
+    <div class="bg-wrap">
+      <img src="/october-halloween-bingo.png" alt="October Bingo" class="bg" />
+      <div id="board" class="board"></div>
+    </div>
 
-<section class="prizes">
-  <h3>Prizes</h3>
-  <ul>
-    <li><strong>Bingo:</strong> Free limited-edition 2025 KSU shirt (ordered when you win)</li>
-    <li><strong>Blackout:</strong> Entry to $100 Visa gift-card drawing</li>
-  </ul>
-</section>
+    <!-- Claim bar + prizes -->
+    <div id="claimbar" style="max-width:900px;margin:10px auto 0;text-align:center"></div>
 
-  <section class="footer">
-    <details>
-      <summary>Debug session</summary>
-      <pre id="debug">(none)</pre>
-    </details>
-  </section>
-</main>
+    <section class="prizes">
+      <h3>Prizes</h3>
+      <ul>
+        <li><strong>Bingo:</strong> Free limited-edition 2025 KSU shirt (ordered when you win)</li>
+        <li><strong>Blackout:</strong> Entry to $100 Visa gift-card drawing</li>
+      </ul>
+    </section>
 
-
+    <!-- Debug -->
     <section class="footer">
       <details>
         <summary>Debug session</summary>
