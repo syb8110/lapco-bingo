@@ -127,3 +127,17 @@ function renderBoard(done){
 }
 
 boot();
+document.getElementById('signin')?.addEventListener('click', async () => {
+  await supabaseClient.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin }
+  });
+});
+
+document.getElementById('signout')?.addEventListener('click', async () => {
+  await supabaseClient.auth.signOut();
+  window.location.reload();
+});
+document.getElementById('who').textContent = currentUser
+  ? `Signed in: ${currentUser.email}`
+  : 'Not signed in';
