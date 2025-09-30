@@ -47,7 +47,7 @@ body {
 /* Grid overlay positioned over the artwork */
 :root {
   /* Adjust these until the invisible tiles line up with your printed grid */
-  --board-top: 22%;        /* push overlay down from top of image */
+  --board-top: 26%;        /* push overlay down from top of image */
   --board-width: 83%;      /* how wide the overlay grid is relative to the image */
 }
 
@@ -83,3 +83,14 @@ body {
   transform: rotate(-8deg);
   pointer-events: none;
 }
+/* Force-clear any frost or backgrounds */
+.bg-wrap, .board, .tile {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Keep debug outline only when you need it */
+body.debug .tile { outline: 2px dashed rgba(255,0,200,.6); }
+body.debug .tile.done::after { opacity: .25; }
