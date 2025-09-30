@@ -10,8 +10,8 @@
   --board-scale-y: 0.96;     /* stretch/compress vertically (1 = none) */
 
   /* Spacing between squares */
-  --gap-x: 12px;             /* horizontal gaps */
-  --gap-y: 12px;             /* vertical gaps */
+  --gap-x: 15px;             /* horizontal gaps */
+  --gap-y: 15px;             /* vertical gaps */
 
   /* Micro nudge in pixels (left/right) */
   --board-shift-px: 0px;     /* e.g., 2px or -2px */
