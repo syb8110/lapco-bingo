@@ -27,3 +27,59 @@ body {
   background: url('/october-halloween-bingo.png') top center no-repeat;
   background-size: cover;
 }
+/* === Background + overlay setup === */
+
+/* Wrapper keeps image and grid together */
+.bg-wrap {
+  position: relative;
+  max-width: 900px;        /* scales nicely on desktop */
+  margin: 0 auto;
+  padding: 0;
+}
+
+/* Background artwork */
+.bg {
+  display: block;
+  width: 100%;
+  height: auto;            /* keeps aspect ratio */
+}
+
+/* Grid overlay positioned over the artwork */
+:root {
+  /* Adjust these until the invisible tiles line up with your printed grid */
+  --board-top: 22%;        /* push overlay down from top of image */
+  --board-width: 83%;      /* how wide the overlay grid is relative to the image */
+}
+
+.board {
+  position: absolute;
+  top: var(--board-top);
+  left: 50%;
+  transform: translateX(-50%);
+  width: var(--board-width);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  background: transparent;
+  border: none;
+}
+
+/* Tiles are invisible; only the stamp shows when 'done' */
+.tile {
+  aspect-ratio: 1 / 1;
+  background: transparent;
+  border: none;
+  position: relative;
+}
+.tile .check { display: none; }
+
+/* Stamp overlay (apple core) */
+.tile.done::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url('/apple-core-stamp.png') center/80% no-repeat;
+  opacity: 0.8;
+  transform: rotate(-8deg);
+  pointer-events: none;
+}
