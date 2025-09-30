@@ -4,8 +4,8 @@
   --board-scale-y: 0.96;    /* squish/stretch vertically */
   --board-left: 50%;        /* keep centered */
   --board-shift-px: 0px;    /* move entire grid left/right */
-  --gap-x: 9px;             /* space between columns */
-  --gap-y: 9px;             /* space between rows */
+  --gap-x: 12px;             /* space between columns */
+  --gap-y: 12px;             /* space between rows */
 }
 *{box-sizing:border-box}
 body {
