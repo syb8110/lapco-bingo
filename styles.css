@@ -146,3 +146,23 @@ body.debug .tile.done::after { opacity: .25; }
   grid-template-rows: repeat(5, 1fr);
   gap: var(--gap-y) var(--gap-x);
 }
+/* === FINAL gap + alignment overrides (win the cascade) === */
+:root{
+  /* try big values first so you can see a change, then dial back */
+  --gap-x: 24px;   /* horizontal gap between columns */
+  --gap-y: 24px;   /* vertical gap between rows */
+}
+
+/* target the actual overlay grid element */
+#board.board{
+  /* make sure our rule wins */
+  column-gap: var(--gap-x) !important;
+  row-gap:    var(--gap-y) !important;
+  gap: var(--gap-y) var(--gap-x) !important;
+}
+
+/* in case any earlier rule added spacing on tiles themselves */
+.tile{
+  margin: 0 !important;
+  padding: 0 !important;
+}
