@@ -100,3 +100,19 @@ summary{ cursor:pointer }
 /* Add class="debug" to <body> temporarily while aligning */
 body.debug .tile{ outline: 2px dashed rgba(255,0,200,.6); }
 body.debug .tile.done::after{ opacity:.25; }
+/* Center labels in each tile and make them readable */
+.tile{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:8px 10px;
+}
+.tile > span{
+  max-width:95%;
+  font-weight:800;
+  line-height:1.15;
+  /* scales with screen but stays readable */
+  font-size: clamp(14px, 1.6vw, 18px);
+  word-break: break-word;
+}
