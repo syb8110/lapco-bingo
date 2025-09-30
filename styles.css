@@ -47,7 +47,7 @@ body {
 /* Grid overlay positioned over the artwork */
 :root {
   /* Adjust these until the invisible tiles line up with your printed grid */
-  --board-top: 26%;        /* push overlay down from top of image */
+  --board-top: 24%;        /* push overlay down from top of image */
   --board-width: 83%;      /* how wide the overlay grid is relative to the image */
 }
 
