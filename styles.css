@@ -1,4 +1,8 @@
 *{box-sizing:border-box}
+body {
+  background: url('/october-halloween-bingo.png') top center no-repeat;
+  background-size: cover;
+}
 body{margin:0;font-family:system-ui,Segoe UI,Arial;background:#0b0b12;color:#fff}
 .top{display:flex;align-items:center;gap:16px;justify-content:space-between;padding:12px 16px;background:#151526;border-bottom:1px solid #222}
 .title{font-weight:800;letter-spacing:.5px}
