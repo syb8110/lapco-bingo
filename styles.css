@@ -21,3 +21,9 @@ main{max-width:960px;margin:0 auto;padding:16px}
 .tile.done .check{background:#27d27d;border-color:#27d27d}
 .footer{margin-top:24px}
 summary{cursor:pointer}
+/* === Monthly background === */
+html, body { height: 100%; }
+body {
+  background: url('/october-halloween-bingo.png') top center no-repeat;
+  background-size: cover;
+}
