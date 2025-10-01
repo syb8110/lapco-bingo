@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LAPCo Admin</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    .card{max-width:900px;margin:20px auto;padding:16px;background:#121223;border:1px solid #2a2a44;border-radius:12px}
+    label{display:block;margin:10px 0 4px;color:#cfd}
+    input[type=text], textarea{width:100%;padding:10px;border-radius:10px;border:1px solid #3b3b55;background:#0c0c18;color:#fff}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .row > div{flex:1 1 260px}
+    button{padding:10px 14px;border-radius:10px;border:none;background:#6d4bff;color:#fff;font-weight:700;cursor:pointer}
+    .ghost{background:#2a2a44}
+    pre{white-space:pre-wrap}
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="title">LAPCo Admin</div>
+    <div class="actions">
+      <div id="who">Checking access…</div>
+      <button id="signin">Sign in with Google</button>
+      <button id="signout" class="ghost">Sign out</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="card">
+      <div class="row">
+        <div>
+          <label>Contest ID (slug)</label>
+          <input id="contest_id" type="text" placeholder="October2025" />
+        </div>
+        <div>
+          <label>Contest Name</label>
+          <input id="contest_name" type="text" placeholder="K-State October Bingo" />
+        </div>
+        <div>
+          <label>Active?</label>
+          <div><input id="is_active" type="checkbox" /> Set active</div>
+        </div>
+      </div>
+
+      <label>Tiles (one per line, 25 total)</label>
+      <textarea id="tiles" rows="8" placeholder="Aerial class&#10;Reformer class&#10;..."></textarea>
+
+      <div class="row">
+        <div>
+          <label>Bingo Prize</label>
+          <input id="prize_bingo" type="text" placeholder="2025 KSU shirt" />
+        </div>
+        <div>
+          <label>Blackout Prize</label>
+          <input id="prize_blackout" type="text" placeholder="$100 Visa gift card entry" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Background image (PNG/JPG)</label>
+          <input id="bg_file" type="file" accept="image/*" />
+        </div>
+        <div>
+          <label>Stamp image (PNG with transparency)</label>
+          <input id="stamp_file" type="file" accept="image/png,image/webp" />
+        </div>
+      </div>
+
+      <div class="row">
+        <button id="save">Save/Update Contest</button>
+        <button id="loadActive" class="ghost">Load Active Contest</button>
+      </div>
+
+      <details style="margin-top:12px">
+        <summary>Debug</summary>
+        <pre id="debug">(none)</pre>
+      </details>
+    </div>
+  </main>
+
+  <script src="./admin.js"></script>
+</body>
+</html>
