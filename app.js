@@ -53,6 +53,28 @@ function seededShuffle(arr, seedStr){
   }
   return a;
 }
+async function loadLeaderboard(){
+  const box = document.getElementById('leaderboard');
+  if (!box) return;
+  try {
+    // call the SQL function we created
+    const { data, error } = await supa.rpc('leaderboard_public', { limit_n: 10 });
+    if (error) { console.error('leaderboard', error); box.innerHTML = '<div style="opacity:.7">Unavailable</div>'; return; }
+    if (!data || data.length === 0) { box.innerHTML = '<div style="opacity:.7">No entries yet. Be the first!</div>'; return; }
+
+    // render simple list
+    const rows = data.map((r, i) =>
+      `<div style="display:flex;justify-content:space-between;padding:8px 10px;border-bottom:1px solid #222">
+         <div><strong>#${i+1}</strong> ${r.display_name || 'Player'}</div>
+         <div>${r.tiles_done} tiles</div>
+       </div>`
+    ).join('');
+    box.innerHTML = rows;
+  } catch (e) {
+    console.error(e);
+    box.innerHTML = '<div style="opacity:.7">Unavailable</div>';
+  }
+}
 
 /* === Active contest loader (single source of truth) === */
 async function loadActiveContest(){
