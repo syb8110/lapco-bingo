@@ -2,10 +2,10 @@
   --board-top: 26%;
   --board-left: 50%;
   --board-width: 85%;
-  --board-scale-x: 1.0;
+  --board-scale-x: 0.96;
   --board-scale-y: 0.96;
-  --gap-x: 10px;
-  --gap-y: 10px;
+  --gap-x: 15px;
+  --gap-y: 15px;
   --board-shift-px: 0px;
 }
 
