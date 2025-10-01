@@ -490,7 +490,7 @@ supa.auth.onAuthStateChange(async (_evt, sess)=>{
     await loadActiveContest();
     await renderBoard();
     await showAdminIfNeeded();
-    LoadLeaderboard();
+    loadLeaderboard();
   } else {
     whoEl.textContent = 'Not signed in';
     boardEl.innerHTML = '';
