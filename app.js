@@ -466,20 +466,25 @@ if (emailBtn){
 }
 
 async function boot(){
-  // reflect current session
   const { data:{ session } } = await supa.auth.getSession();
   user = session?.user || null;
   whoEl.textContent = user ? `Signed in: ${user.user_metadata?.full_name || user.email}` : 'Not signed in';
   debugEl.textContent = session ? JSON.stringify(session, null, 2) : '(none)';
 
   const contest = await loadActiveContest(); // load info/art first
-  if (!contest){ return; }
+  if (!contest) return;
 
-  if (!user){ return; }
+  if (!user) {
+    loadLeaderboard();   // show leaderboard even logged-out
+    return;
+  }
+
   await ensureConsent(user.id);
   await renderBoard();
   await showAdminIfNeeded();
+  loadLeaderboard();     // paint on first render
 }
+
 
 supa.auth.onAuthStateChange(async (_evt, sess)=>{
   user = sess?.user || null;
