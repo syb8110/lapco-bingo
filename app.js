@@ -284,3 +284,11 @@ async function loadActiveContest(){
   }
   return data;
 }
+function stampStyle(){
+  if (!ACTIVE_CONTEST?.stamp_image_path) return '';
+  const { data:pub } = supa.storage.from('bingo').getPublicUrl(ACTIVE_CONTEST.stamp_image_path);
+  return `background-image: url('${pub.publicUrl}');`;
+}
+...
+// when rendering tiles:
+tile.dataset.stamp = stampStyle(); // store per-tile
