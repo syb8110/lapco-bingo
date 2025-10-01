@@ -22,13 +22,20 @@
   </div>
 
   <header class="top">
-    <div class="title">LAPCo Bingo</div>
-    <div class="actions">
-      <div id="who">Not signed in</div>
-      <button id="signin">Sign in with Google</button>
-      <button id="signout" class="ghost">Sign out</button>
-    </div>
-  </header>
+  <div class="title">LAPCo Bingo</div>
+  <div class="actions">
+    <div id="who">Not signed in</div>
+
+    <!-- Email login (magic link) -->
+    <input id="emailInput" type="email" placeholder="you@example.com" class="env" style="min-width:220px" />
+    <button id="emailLogin">Email me a login link</button>
+
+    <!-- Google login -->
+    <button id="signin">Sign in with Google</button>
+    <button id="signout" class="ghost">Sign out</button>
+  </div>
+</header>
+
 
   <main>
     <section class="status">
