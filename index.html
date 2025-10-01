@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>LAPCo Bingo (Starter)</title>
+  <title>LAPCo Bingo</title>
   <link rel="stylesheet" href="./styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-  <!-- Media waiver (shown once after login) -->
+  <!-- Waiver modal -->
   <div id="consentModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center">
     <div style="background:#111;border:1px solid #333;border-radius:12px;max-width:520px;width:90%;padding:18px">
       <h3 style="margin:0 0 8px">Media Waiver</h3>
@@ -24,10 +24,7 @@
   <header class="top">
     <div class="title">LAPCo Bingo</div>
     <div class="actions">
-      <!-- If you plan to hardcode keys in app.js, these can be removed. Keeping for later if you want UI-based config. -->
-      <input id="url" class="env" placeholder="SUPABASE URL (https://XYZ.supabase.co)" />
-      <input id="key" class="env" placeholder="Publishable (anon) key" />
-      <button id="saveEnv">Save</button>
+      <div id="who">Not signed in</div>
       <button id="signin">Sign in with Google</button>
       <button id="signout" class="ghost">Sign out</button>
     </div>
@@ -35,17 +32,14 @@
 
   <main>
     <section class="status">
-      <div id="who">Not signed in</div>
       <div id="stats"></div>
     </section>
 
-    <!-- Background art with overlay board -->
     <div class="bg-wrap">
       <img src="/october-halloween-bingo.png" alt="October Bingo" class="bg" />
       <div id="board" class="board"></div>
     </div>
 
-    <!-- Claim bar + prizes -->
     <div id="claimbar" style="max-width:900px;margin:10px auto 0;text-align:center"></div>
 
     <section class="prizes">
@@ -56,10 +50,9 @@
       </ul>
     </section>
 
-    <!-- Debug -->
     <section class="footer">
       <details>
-        <summary>Debug session</summary>
+        <summary>Debug</summary>
         <pre id="debug">(none)</pre>
       </details>
     </section>
