@@ -54,30 +54,25 @@ function seededShuffle(arr, seedStr){
   return a;
 }
 
-/* === Active contest loader === */
-let ACTIVE_CONTEST = null;
-
+/* === Active contest loader (single source of truth) === */
 async function loadActiveContest(){
-  const { data, error } = await supa.from('contests').select('*').eq('is_active', true).maybeSingle();
-  if (error || !data){ console.error('No active contest', error); return null; }
+  const { data, error } = await supa
+    .from('contests')
+    .select('*')
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (error || !data){
+    console.error('No active contest', error);
+    return null;
+  }
+
   ACTIVE_CONTEST = data;
 
-  // If there’s a background in Storage, swap the img
-  if (data.bg_image_path){
-    const { data:pub } = supa.storage.from('bingo').getPublicUrl(data.bg_image_path);
-    const img = document.querySelector('.bg');
-    if (img && pub?.publicUrl) img.src = pub.publicUrl;
-  }
-  return data;
-}
-
-  }
-  ACTIVE_CONTEST = data;
-
-  // Set background image if provided (Storage: bucket "bingo")
+  // Swap background if stored in bucket "bingo"
   if (ACTIVE_CONTEST.bg_image_path){
     const { data:pub } = supa.storage.from('bingo').getPublicUrl(ACTIVE_CONTEST.bg_image_path);
-    const img = $('.bg');
+    const img = document.querySelector('.bg');
     if (img && pub?.publicUrl) img.src = pub.publicUrl;
   }
   return ACTIVE_CONTEST;
@@ -316,29 +311,7 @@ async function renderBoard(){
   renderClaimBar(done);
 }
 
-/* === Auth & boot === */
-document.getElementById('signin').onclick = async ()=>{
-  await supa.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin }});
-};
-document.getElementById('signout').onclick = async ()=>{
-  await supa.auth.signOut();
-  window.location.reload();
-};
-
-/* Email magic link login */
-if (emailBtn){
-  emailBtn.onclick = async ()=>{
-    const email = (emailInput?.value || '').trim();
-    if (!email){ alert('Enter an email'); return; }
-    const { error } = await supa.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: window.location.origin }
-    });
-    if (error){ alert('Could not send login link.'); console.error(error); return; }
-    alert('Check your email for the login link.');
-  };
-}
-// ---- ADMIN HELPERS ----
+/* === Admin helpers === */
 async function amIAdmin() {
   if (!user) return false;
   const { data, error } = await supa
@@ -363,19 +336,17 @@ function tilesToLines(arr) {
   return Array.isArray(arr) ? arr.join('\n') : '';
 }
 
-// Load current ACTIVE_CONTEST into the admin form
 async function loadContestIntoAdmin() {
-  if (!window.ACTIVE_CONTEST) return;
-  document.getElementById('contestId').value   = ACTIVE_CONTEST.id || '';
-  document.getElementById('contestName').value = ACTIVE_CONTEST.name || '';
-  document.getElementById('tilesText').value   = tilesToLines(ACTIVE_CONTEST.tiles || []);
+  if (!ACTIVE_CONTEST) return;
+  $('#contestId').value   = ACTIVE_CONTEST.id || '';
+  $('#contestName').value = ACTIVE_CONTEST.name || '';
+  $('#tilesText').value   = tilesToLines(ACTIVE_CONTEST.tiles || []);
 }
 
-// Save tiles + name (upsert)
 async function saveTilesFromAdmin() {
-  const contestId = document.getElementById('contestId').value.trim();
-  const name      = document.getElementById('contestName').value.trim();
-  const tilesArr  = linesToTiles(document.getElementById('tilesText').value);
+  const contestId = $('#contestId').value.trim();
+  const name      = $('#contestName').value.trim();
+  const tilesArr  = linesToTiles($('#tilesText').value);
 
   if (!contestId || !name) return setAdminMsg('Contest ID and Name are required.');
   if (tilesArr.length !== 25) return setAdminMsg(`Please enter exactly 25 tiles (you have ${tilesArr.length}).`);
@@ -388,23 +359,20 @@ async function saveTilesFromAdmin() {
   if (error) return setAdminMsg('Error saving tiles: ' + error.message);
 
   setAdminMsg('Tiles saved.');
-
-  // If we edited the active contest, refresh the board
-  if (window.ACTIVE_CONTEST && ACTIVE_CONTEST.id === contestId) {
+  if (ACTIVE_CONTEST && ACTIVE_CONTEST.id === contestId) {
     ACTIVE_CONTEST.tiles = tilesArr;
     await renderBoard();
   }
 }
 
-// Upload background or stamp to Storage bucket "bingo" and update the contest row
 async function uploadImage(fileInputId, targetField) {
   const file = document.getElementById(fileInputId)?.files?.[0];
   if (!file) return setAdminMsg('No file selected.');
 
-  const contestId = document.getElementById('contestId').value.trim() || (window.ACTIVE_CONTEST && ACTIVE_CONTEST.id);
+  const contestId = $('#contestId').value.trim() || (ACTIVE_CONTEST && ACTIVE_CONTEST.id);
   if (!contestId) return setAdminMsg('Contest ID is required first.');
 
-  // Make sure you created a PUBLIC bucket named "bingo" in Supabase Storage
+  // PUBLIC bucket named "bingo" in Supabase Storage
   const ext = (file.name.toLowerCase().endsWith('.png') ? '.png' : '.jpg');
   const base = (targetField === 'bg_image_path') ? 'background' : 'stamp';
   const path = `${contestId}/${base}${ext}`;
@@ -416,33 +384,26 @@ async function uploadImage(fileInputId, targetField) {
   if (updErr) return setAdminMsg('Could not update contest row: ' + updErr.message);
 
   setAdminMsg(`${base} uploaded.`);
-  // If we updated the active contest’s background, update the image on the page
-  if (window.ACTIVE_CONTEST && ACTIVE_CONTEST.id === contestId && targetField === 'bg_image_path') {
+  if (ACTIVE_CONTEST && ACTIVE_CONTEST.id === contestId && targetField === 'bg_image_path') {
     const { data:pub } = supa.storage.from('bingo').getPublicUrl(path);
     const img = document.querySelector('.bg');
     if (img && pub?.publicUrl) img.src = pub.publicUrl;
   }
 }
 
-// Switch which contest is active
 async function setActiveContest() {
-  const contestId = document.getElementById('contestId').value.trim();
+  const contestId = $('#contestId').value.trim();
   if (!contestId) return setAdminMsg('Contest ID required.');
-
-  // Fallback approach: two updates
   await supa.from('contests').update({ is_active: false }).neq('id', contestId);
   await supa.from('contests').update({ is_active: true }).eq('id', contestId);
-
   setAdminMsg('Active contest set.');
   await loadActiveContest();
   if (user) await renderBoard();
 }
 
-// Show panel only if user is admin; wire buttons
 async function showAdminIfNeeded() {
   const panel = document.getElementById('adminPanel');
   if (!panel) return;
-
   if (!user) { panel.style.display = 'none'; return; }
 
   const admin = await amIAdmin();
@@ -458,7 +419,31 @@ async function showAdminIfNeeded() {
   }
 }
 
+/* === Auth & boot === */
+document.getElementById('signin').onclick = async ()=>{
+  await supa.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin }});
+};
+document.getElementById('signout').onclick = async ()=>{
+  await supa.auth.signOut();
+  window.location.reload();
+};
+
+/* Email magic link login (non-Google) */
+if (emailBtn){
+  emailBtn.onclick = async ()=>{
+    const email = (emailInput?.value || '').trim();
+    if (!email){ alert('Enter an email'); return; }
+    const { error } = await supa.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: window.location.origin }
+    });
+    if (error){ alert('Could not send login link.'); console.error(error); return; }
+    alert('Check your email for the login link.');
+  };
+}
+
 async function boot(){
+  // reflect current session
   const { data:{ session } } = await supa.auth.getSession();
   user = session?.user || null;
   whoEl.textContent = user ? `Signed in: ${user.user_metadata?.full_name || user.email}` : 'Not signed in';
@@ -470,6 +455,7 @@ async function boot(){
   if (!user){ return; }
   await ensureConsent(user.id);
   await renderBoard();
+  await showAdminIfNeeded();
 }
 
 supa.auth.onAuthStateChange(async (_evt, sess)=>{
@@ -478,21 +464,16 @@ supa.auth.onAuthStateChange(async (_evt, sess)=>{
   if (user) {
     whoEl.textContent = `Signed in as ${user.user_metadata?.full_name || user.email}`;
     await ensureConsent(user.id);
-    await loadActiveContest();          // make sure ACTIVE_CONTEST is available
+    await loadActiveContest();
     await renderBoard();
-    await showAdminIfNeeded();          // <— add this
+    await showAdminIfNeeded();
   } else {
     whoEl.textContent = 'Not signed in';
     boardEl.innerHTML = '';
     claimBarEl.innerHTML = '';
     statsEl.textContent = '';
-    document.getElementById('adminPanel')?.style && (document.getElementById('adminPanel').style.display='none');
-  }
-});
-
-// In boot(), after loadActiveContest() and renderBoard():
-await showAdminIfNeeded();              // <— add this too
-
+    const panel = document.getElementById('adminPanel');
+    if (panel) panel.style.display = 'none';
   }
 });
 
