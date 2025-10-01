@@ -57,43 +57,96 @@ function hasBingo(done){
   return L.some(line => line.every(c => done.includes(c)));
 }
 function hasBlackout(done){ return done.length === 25; }
+// Deterministic PRNG + hash
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; } }
+function hashString(s){ let h=2166136261>>>0; for (let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+function seededShuffle(arr, seedStr){
+  const rnd = mulberry32(hashString(seedStr));
+  const a = [...arr];
+  for (let i=a.length-1;i>0;i--){
+    const j = Math.floor(rnd()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
 
 /* ===== Consent ===== */
 async function ensureConsent(userId){
-  const { data } = await supa.from('profiles').select('consent').eq('id', userId).maybeSingle();
-  if (!data){ await supa.from('profiles').insert({ id: userId, consent: false }); }
-  const needs = !data || data.consent === false;
-  if (needs){
-    const modal = $('#consentModal');
-    modal.style.display = 'flex';
-    $('#consentAgree').onclick = async ()=>{
-      await supa.from('profiles').update({ consent: true }).eq('id', userId);
-      modal.style.display = 'none';
-    };
+  // Try to read existing row
+  let { data, error } = await supa
+    .from('profiles')
+    .select('consent')
+    .eq('id', userId)
+    .maybeSingle();
+  if (error) { console.error('profiles select', error); return; }
+
+  // Create row if missing (consent=false)
+  if (!data){
+    const ins = await supa
+      .from('profiles')
+      .upsert({ id: userId, consent: false })
+      .select('consent')
+      .single();
+    if (ins.error) { console.error('profiles upsert', ins.error); return; }
+    data = ins.data;
   }
+
+  // Already consented? No modal.
+  if (data?.consent === true) return;
+
+  // Show modal once, set consent=true on agree
+  const modal = document.getElementById('consentModal');
+  modal.style.display = 'flex';
+  document.getElementById('consentAgree').onclick = async ()=>{
+    const upd = await supa.from('profiles').update({ consent: true }).eq('id', userId).select().single();
+    if (upd.error) { console.error('profiles update', upd.error); return; }
+    modal.style.display = 'none';
+  };
 }
+
 
 /* ===== Board labels per user (contest-scoped) ===== */
 async function loadUserBoardLabels(){
-  const { data } = await supa
+  // 1) Try to read existing board for this user + contest
+  const { data, error } = await supa
     .from('user_card_cells')
     .select('tile_code,label')
     .eq('user_id', user.id)
     .eq('contest_id', CONTEST_ID)
     .order('tile_code', { ascending: true });
 
+  if (error){ console.error('user_card_cells select', error); }
+
+  // 2) If we have a full board, use it
   if (data && data.length === 25) return data;
 
-  const shuffled = shuffle(KSU_TILES);
+  // 3) If there are partial rows (0<length<25), clean and reseed once
+  if (data && data.length > 0){
+    const del = await supa
+      .from('user_card_cells')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('contest_id', CONTEST_ID);
+    if (del.error){ console.error('user_card_cells cleanup', del.error); }
+  }
+
+  // 4) Seed deterministically (so the order is stable for this user+contest)
+  const seed = `${user.id}::${CONTEST_ID}`;
+  const shuffled = seededShuffle(KSU_TILES, seed);
   const rows = shuffled.map((label, i)=>({
     user_id: user.id,
     contest_id: CONTEST_ID,
     tile_code: codeAt(i),
     label
   }));
-  await supa.from('user_card_cells').insert(rows);
+
+  const ins = await supa.from('user_card_cells').upsert(rows);
+  if (ins.error){ console.error('user_card_cells upsert', ins.error); }
+
   return rows;
 }
+
 
 /* ===== Completions ===== */
 async function loadCompletions(){
