@@ -56,6 +56,42 @@
         <li><strong>Blackout:</strong> Entry to $100 Visa gift-card drawing</li>
       </ul>
     </section>
+<!-- ===== ADMIN PANEL (shows only for admins) ===== -->
+<section id="adminPanel" style="display:none; max-width:900px; margin:24px auto; padding:16px; background:#111; border:1px solid #333; border-radius:12px">
+  <h3 style="margin-top:0">Admin: Manage Contest</h3>
+
+  <div style="display:grid; gap:12px">
+    <label>Contest ID
+      <input id="contestId" class="env" placeholder="October2025">
+    </label>
+    <label>Contest Name
+      <input id="contestName" class="env" placeholder="K-State October Bingo">
+    </label>
+
+    <label>Tiles (enter exactly 25 lines)</label>
+    <textarea id="tilesText" rows="10" style="width:100%; background:#0f0f18; color:#eaeaff; border:1px solid #3b3b55; border-radius:8px; padding:8px"></textarea>
+
+    <div style="display:flex; gap:12px; flex-wrap:wrap">
+      <div>
+        <label>Background image (PNG/JPG)</label><br>
+        <input type="file" id="bgFile" accept="image/*">
+      </div>
+      <div>
+        <label>Stamp image (PNG)</label><br>
+        <input type="file" id="stampFile" accept="image/*">
+      </div>
+    </div>
+
+    <div style="display:flex; gap:8px; flex-wrap:wrap">
+      <button id="saveTiles">Save tiles</button>
+      <button id="uploadBg" class="ghost">Upload background</button>
+      <button id="uploadStamp" class="ghost">Upload stamp</button>
+      <button id="setActive" class="ghost">Set active contest</button>
+    </div>
+
+    <div id="adminMsg" style="opacity:.9"></div>
+  </div>
+</section>
 
     <section class="footer">
       <details>
