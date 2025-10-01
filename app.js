@@ -292,3 +292,36 @@ function stampStyle(){
 ...
 // when rendering tiles:
 tile.dataset.stamp = stampStyle(); // store per-tile
+if (tile.classList.contains('done')){
+  tile.style.setProperty('--stamp-url', ''); // not needed if using inline
+  tile.style.background = ''; // ensure clean
+  tile.style.setProperty('--stamp-inline', '1');
+  tile.style.setProperty('background-image', ''); // ignored
+  tile.style.setProperty('--x', '0'); // optional
+  tile.style.setProperty('--y', '0');
+  tile.style.setProperty('--size', '80%');
+  tile.style.setProperty('--rotate', '-8deg');
+  tile.style.setProperty('--opacity', '0.85');
+  tile.style.cssText += `--stamp-url: none;`; // harmless
+  // inline after pseudo: not directly possible, so instead:
+  tile.querySelector('.stamp')?.remove();
+  const s = document.createElement('div');
+  s.className = 'stamp';
+  s.setAttribute('style', `${stampStyle()} background-position:center; background-size:80%; background-repeat:no-repeat; position:absolute; inset:0; opacity:.85; transform:rotate(-8deg); pointer-events:none;`);
+  tile.appendChild(s);
+} else {
+  tile.querySelector('.stamp')?.remove();
+}
+async function boot(){
+  const { data:{ session } } = await supa.auth.getSession();
+  user = session?.user || null;
+  whoEl.textContent = user ? `Signed in: ${user.user_metadata?.full_name || user.email}` : 'Not signed in';
+
+  const contest = await loadActiveContest();           // <-- get contest first
+  if (!contest){ return; }
+
+  if (!user){ return; }
+  await ensureConsent(user.id);
+  await renderBoard();                                 // render uses ACTIVE_CONTEST.id and ACTIVE_CONTEST.tiles
+}
+
