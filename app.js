@@ -324,6 +324,7 @@ async function renderBoard(){
       done = await loadCompletions();
       statsEl.textContent = `Completed ${done.length}/25`;
       renderClaimBar(done);
+      loadLeaderboard();
     };
 
     boardEl.appendChild(cell);
@@ -489,6 +490,7 @@ supa.auth.onAuthStateChange(async (_evt, sess)=>{
     await loadActiveContest();
     await renderBoard();
     await showAdminIfNeeded();
+    LoadLeaderboard();
   } else {
     whoEl.textContent = 'Not signed in';
     boardEl.innerHTML = '';
