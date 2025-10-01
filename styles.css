@@ -74,11 +74,12 @@ main{ max-width:960px; margin:0 auto; padding:16px }
 .tile.done::after{
   content:"";
   position:absolute; inset:0;
-  background:url('/apple-core-stamp.png') center/80% no-repeat;
+  background: center/80% no-repeat;
   opacity:.85;
   transform: rotate(-8deg);
   pointer-events:none;
 }
+
 
 /* Prizes card */
 .prizes{
