@@ -1,7 +1,6 @@
 /* ===== Config (embed these so no inputs are needed) ===== */
 const SUPABASE_URL = 'https://flknutfjusmbxfgdthcu.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_805-pUNi1vu6mhUA7Y9UTw_Yv8QAKbD';
-const CONTEST_ID   = 'October2025';                             // <-- change monthly
 
 /* ===== Supabase ===== */
 const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -15,7 +14,7 @@ const boardEl = document.getElementById('board');
 const claimBarEl = document.getElementById('claimbar');
 
 /* ===== Tiles (no Free Space; doubles; Any Class Type) ===== */
-const KSU_TILES = [
+const ACTIVE_CONTEST.tiles = [
   "Aerial class","Aerial class",
   "Reformer class","Reformer class",
   "Yoga class","Yoga class",
@@ -113,7 +112,7 @@ async function loadUserBoardLabels(){
     .from('user_card_cells')
     .select('tile_code,label')
     .eq('user_id', user.id)
-    .eq('contest_id', CONTEST_ID)
+    .eq('ACTIVE_CONTEST.id', ACTIVE_CONTEST.id)
     .order('tile_code', { ascending: true });
 
   if (error){ console.error('user_card_cells select', error); }
@@ -127,16 +126,16 @@ async function loadUserBoardLabels(){
       .from('user_card_cells')
       .delete()
       .eq('user_id', user.id)
-      .eq('contest_id', CONTEST_ID);
+      .eq('ACTIVE_CONTEST.id', ACTIVE_CONTEST.id);
     if (del.error){ console.error('user_card_cells cleanup', del.error); }
   }
 
   // 4) Seed deterministically (so the order is stable for this user+contest)
-  const seed = `${user.id}::${CONTEST_ID}`;
-  const shuffled = seededShuffle(KSU_TILES, seed);
+  const seed = `${user.id}::${ACTIVE_CONTEST.id}`;
+  const shuffled = seededShuffle(ACTIVE_CONTEST.tiles, seed);
   const rows = shuffled.map((label, i)=>({
     user_id: user.id,
-    contest_id: CONTEST_ID,
+    ACTIVE_CONTEST.id: ACTIVE_CONTEST.id,
     tile_code: codeAt(i),
     label
   }));
@@ -154,16 +153,16 @@ async function loadCompletions(){
     .from('completions')
     .select('tile_code')
     .eq('user_id', user.id)
-    .eq('contest_id', CONTEST_ID);
+    .eq('ACTIVE_CONTEST.id', ACTIVE_CONTEST.id);
   return (data||[]).map(r=>r.tile_code);
 }
 async function setCompletion(tile_code, done){
   if (done){
-    await supa.from('completions').insert({ user_id: user.id, contest_id: CONTEST_ID, tile_code });
+    await supa.from('completions').insert({ user_id: user.id, ACTIVE_CONTEST.id: ACTIVE_CONTEST.id, tile_code });
   } else {
     await supa.from('completions')
       .delete()
-      .eq('user_id', user.id).eq('contest_id', CONTEST_ID).eq('tile_code', tile_code);
+      .eq('user_id', user.id).eq('ACTIVE_CONTEST.id', ACTIVE_CONTEST.id).eq('tile_code', tile_code);
   }
 }
 
@@ -179,14 +178,14 @@ async function renderClaimBar(done){
     if (kind === 'bingo'){
       const { data: claimed } = await supa
         .from('claims').select('id')
-        .eq('user_id', user.id).eq('contest_id', CONTEST_ID).eq('kind','bingo')
+        .eq('user_id', user.id).eq('ACTIVE_CONTEST.id', ACTIVE_CONTEST.id).eq('kind','bingo')
         .maybeSingle();
       if (claimed){ alert('Bingo already claimed for this contest — go for Blackout!'); return; }
     }
 
     const { error } = await supa.from('claims').insert({
       user_id: user.id,
-      contest_id: CONTEST_ID,
+      ACTIVE_CONTEST.id: ACTIVE_CONTEST.id,
       email: user.email,
       kind,
       tiles: done
@@ -195,7 +194,7 @@ async function renderClaimBar(done){
 
     const subject = encodeURIComponent(kind === 'blackout' ? 'Blackout claim' : 'Bingo claim');
     const body = encodeURIComponent(
-      `User: ${user.email}\nContest: ${CONTEST_ID}\nKind: ${kind}\nTiles: ${done.join(', ')}\nTime: ${new Date().toLocaleString()}`
+      `User: ${user.email}\nContest: ${ACTIVE_CONTEST.id}\nKind: ${kind}\nTiles: ${done.join(', ')}\nTime: ${new Date().toLocaleString()}`
     );
     window.location.href = `mailto:powercatpilates@gmail.com?subject=${subject}&body=${body}`;
   }
@@ -271,3 +270,17 @@ supa.auth.onAuthStateChange((_evt, sess)=>{
   else { boardEl.innerHTML=''; claimBarEl.innerHTML=''; statsEl.textContent=''; }
 });
 boot();
+let ACTIVE_CONTEST = null;
+
+async function loadActiveContest(){
+  const { data, error } = await supa.from('contests').select('*').eq('is_active', true).maybeSingle();
+  if (error || !data){ console.error('No active contest', error); return null; }
+  ACTIVE_CONTEST = data;
+  // set background image if provided
+  if (data.bg_image_path){
+    const { data:pub } = supa.storage.from('bingo').getPublicUrl(data.bg_image_path);
+    const img = document.querySelector('.bg');
+    if (img) img.src = pub.publicUrl;
+  }
+  return data;
+}
