@@ -1,87 +1,118 @@
+/* =========================
+   LAPCo Bingo — Clean CSS
+   ========================= */
+
+/* ---------- Global variables (your main knobs) ---------- */
 :root{
-  --board-top: 26%;
+  /* Overlay placement over the image */
+  --board-top: 26%;       /* push grid down from top of artwork */
   --board-left: 50%;
-  --board-width: 85%;
-  --board-scale-x: 0.96;
-  --board-scale-y: 0.96;
-  --gap-x: 1.8%;
-  --gap-y: 1.8%;
-  --board-shift-px: 0px;
+  --board-width: 85%;     /* overall grid width relative to artwork */
+
+  /* Fine alignment */
+  --board-scale-x: 1;     /* usually 1 (unitless) */
+  --board-scale-y: 0.96;  /* slight vertical squeeze to match print (unitless) */
+  --board-shift-px: 0px;  /* nudge left/right in pixels if ever needed */
+
+  /* Tile spacing (PERCENT so it scales with the board) */
+  --gap-x: 1.8%;          /* horizontal gap between tiles */
+  --gap-y: 1.8%;          /* vertical gap between tiles */
+
+  /* Tile text */
+  --tile-font-min: 12px;
+  --tile-font-ideal: 2.6vw;
+  --tile-font-max: 16px;
+
+  /* Stamp scale */
+  --stamp-size: 80%;
 }
 
-*{ box-sizing:border-box }
-html, body { height:100%; margin:0 }
-body { font-family: system-ui, Segoe UI, Arial; color:#fff; background:#0b0b12; }
+/* ---------- Resets & base ---------- */
+*{ box-sizing: border-box }
+html, body { height: 100%; margin: 0 }
+body {
+  font-family: system-ui, Segoe UI, Arial, sans-serif;
+  color: #fff;
+  background: #0b0b12;
+}
 
-/* Header */
+/* ---------- Header ---------- */
 .top{
   display:flex; align-items:center; justify-content:space-between;
   padding:12px 16px; background:#151526; border-bottom:1px solid #222;
 }
 .title{ font-weight:800; letter-spacing:.5px }
-.actions{ display:flex; align-items:center; gap:10px }
+.actions{ display:flex; align-items:center; gap:10px; flex-wrap:wrap }
 button{ padding:10px 14px; border-radius:10px; border:none; background:#6d4bff; color:#fff; font-weight:700; cursor:pointer }
 button.ghost{ background:#2a2a44 }
 
-/* Layout */
+/* ---------- Layout ---------- */
 main{ max-width:960px; margin:0 auto; padding:16px }
 .status{ display:flex; justify-content:space-between; align-items:center; margin:10px 0 20px; color:#d6d6ff }
 
-/* Artwork + overlay */
+/* ---------- Artwork + overlay ---------- */
 .bg-wrap{ position:relative; max-width:900px; margin:0 auto; }
 .bg{ display:block; width:100%; height:auto; }
 
-/* Overlay grid */
+/* ---------- Overlay grid (single, authoritative rule) ---------- */
 #board.board{
-  position:absolute;
-  top:var(--board-top);
-  left:calc(var(--board-left) + var(--board-shift-px));
+  position: absolute;
+  top: var(--board-top);
+  left: calc(var(--board-left) + var(--board-shift-px));
   transform: translateX(-50%) scale(var(--board-scale-x), var(--board-scale-y));
   transform-origin: top center;
-  width:var(--board-width);
-  display:grid !important;
-  grid-template-columns:repeat(5,1fr) !important;
-  column-gap:var(--gap-x) !important;
-  row-gap:var(--gap-y) !important;
-  background:transparent !important;
-  border:none !important;
-  box-shadow:none !important;
-  backdrop-filter:none !important;
+  width: var(--board-width);
+
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  column-gap: var(--gap-x);
+  row-gap: var(--gap-y);
+
+  /* Make sure nothing “frosts” the art */
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
 }
 
-/* Invisible tiles, stamp shows when done */
+/* ---------- Tiles: invisible boxes; labels & stamp inside ---------- */
 .tile{
-  aspect-ratio:1/1;
-  position:relative;
-  background:transparent !important;
-  border:none !important;
-  margin:0 !important;
-  padding:0 !important;
+  aspect-ratio: 1 / 1;
+  position: relative;
+
+  /* Keep overlay perfectly clear */
+  background: transparent !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
 
   /* Center labels and make readable */
-  display:flex; align-items:center; justify-content:center; text-align:center;
+  display: flex; align-items: center; justify-content: center; text-align: center;
 }
 .tile > span{
-  max-width:95%;
-  font-weight:800;
-  line-height:1.15;
-  font-size: clamp(14px, 1.6vw, 20px);
+  max-width: 95%;
+  font-weight: 800;
+  line-height: 1.15;
+  font-size: clamp(var(--tile-font-min), var(--tile-font-ideal), var(--tile-font-max));
   word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
+/* no checkmark bubbles */
 .tile .check{ display:none !important; }
 
-.tile.done::after{
-  content:"";
-  position:absolute; inset:0;
-  background: center/80% no-repeat;
-  opacity:.85;
+/* Stamp pseudo-element (added as a child in JS; keep size consistent) */
+.tile .stamp{
+  position: absolute; inset: 0;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: var(--stamp-size);
+  opacity: .85;
   transform: rotate(-8deg);
-  pointer-events:none;
+  pointer-events: none;
 }
 
-
-/* Prizes card */
+/* ---------- Prizes card (unchanged) ---------- */
 .prizes{
   max-width:900px;
   margin:12px auto 0;
@@ -93,112 +124,32 @@ main{ max-width:960px; margin:0 auto; padding:16px }
 .prizes h3{ margin:0 0 6px; font-size:1rem; letter-spacing:.3px }
 .prizes ul{ margin:0; padding-left:18px; line-height:1.35; font-size:.95rem }
 
-/* Debug aids */
-body.debug .tile{ outline:2px dashed rgba(255,0,200,.6); }
-body.debug .tile.done::after{ opacity:.25; }
-/* ==== MOBILE TILE SCALING ONLY (non-destructive overrides) ==== */
-
-/* Ensure the overlay grid uses your % width (so it shrinks on phones) */
-#board.board {
-  width: var(--board-width) !important;   /* override any fixed/min width */
-  column-gap: clamp(6px, 1.8vw, 16px) !important;
-  row-gap:    clamp(6px, 1.8vw, 16px) !important;
-}
-
-/* Keep tiles perfectly square and shrink padding on small screens */
-#board .tile {
-  aspect-ratio: 1 / 1;
-  padding: clamp(4px, 1.2vw, 10px) !important;
-  border-radius: clamp(8px, 2vw, 14px);
-}
-
-/* Tile text scales smoothly across devices (no overflow) */
-#board .tile > span {
-  display: block;
-  text-align: center;
-  line-height: 1.15;
-  font-weight: 700;
-  font-size: clamp(11px, 2.6vw, 16px);
-  word-wrap: break-word;
-  overflow-wrap: anywhere;
-}
-
-/* Stamp stays proportional inside each tile */
-#board .tile .stamp {
-  background-size: 80% !important;
-}
-
-/* Extra narrow phones: tighten gaps just a bit */
-@media (max-width: 360px) {
-  #board.board {
-    column-gap: clamp(4px, 1.2vw, 10px) !important;
-    row-gap:    clamp(4px, 1.2vw, 10px) !important;
-  }
-}
-/* ===== PHONE ALIGNMENT PRECISION (non-destructive overrides) ===== */
-
-/* Base variables (desktop-ish defaults). Tweak these only if needed. */
-:root{
-  --board-top: 26%;          /* vertical start of the grid over the image */
-  --board-width: 83%;        /* overall width of the overlay grid */
-  --gap-x-pct: 1.6%;         /* horizontal gap BETWEEN tiles (as % of grid width) */
-  --gap-y-pct: 1.6%;         /* vertical gap BETWEEN tiles (also % of grid width) */
-  --board-scale-y: 0.96;     /* unitless compression/stretch vertically (1.00 = none) */
-}
-
-/* Force the overlay grid to respect our variables */
-#board.board{
-  position: absolute;
-  top: var(--board-top) !important;
-  left: 50% !important;
-  transform: translateX(-50%) scaleY(var(--board-scale-y)) !important;
-  width: var(--board-width) !important;
-
-  /* Gaps in % so they scale exactly with the artwork */
-  column-gap: var(--gap-x-pct) !important;
-  row-gap:    var(--gap-y-pct) !important;
-
-  /* Kill any accidental frost/backgrounds */
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
-}
-
-/* Tiles: no padding/border so overlay squares match printed squares exactly */
-#board .tile{
-  aspect-ratio: 1 / 1;
-  padding: 0 !important;
-  border: none !important;
-  background: transparent !important;
-}
-
-/* Stamp stays proportional */
-#board .tile .stamp{
-  background-size: 80% !important;
-}
-
-/* ===== Phone tuning: start with these and adjust by tiny nudges (±0.2%) ===== */
+/* ---------- Mobile tuning (small, safe nudges) ---------- */
 @media (max-width: 480px){
   :root{
-    --board-top: 27%;       /* nudge down a bit on phones */
-    --board-width: 84%;     /* widen slightly if columns sit inside the boxes */
-    --gap-x-pct: 1.9%;      /* small increases usually help on narrow phones */
-    --gap-y-pct: 1.85%;
-    --board-scale-y: 0.955; /* compress vertically a hair to match rows */
+    /* small phones: widen a touch and ease spacing */
+    --board-width: 86%;
+    --gap-x: 2.0%;
+    --gap-y: 1.9%;
+    --tile-font-min: 11px;
+    --tile-font-ideal: 2.8vw;
+    --tile-font-max: 15px;
+    /* If rows are slightly too tall or short, nudge this by 0.002–0.01 */
+    --board-scale-y: 0.955;
   }
 }
 
-/* Mid-range (big phones/small tablets in portrait) */
+/* Mid-range (big phones / small tablets) */
 @media (min-width: 481px) and (max-width: 768px){
   :root{
-    --board-top: 26.5%;
-    --board-width: 83.5%;
-    --gap-x-pct: 1.7%;
-    --gap-y-pct: 1.7%;
+    --board-width: 84%;
+    --gap-x: 1.9%;
+    --gap-y: 1.9%;
     --board-scale-y: 0.958;
   }
 }
 
-/* Debug helper (optional): outline tiles to see alignment */
-body.debug #board .tile{ outline: 2px dashed rgba(255,0,180,.5); }
+/* ---------- Debug helper (optional) ---------- */
+/* Add class="debug" on <body> temporarily to see tile outlines */
+body.debug .tile{ outline: 2px dashed rgba(255,0,180,.5); }
+body.debug .tile .stamp{ opacity:.25; }
