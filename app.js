@@ -446,24 +446,29 @@ if (emailBtn){
   };
 }
 
-/* === Boot (deterministic) === */
-async function boot(){
-  // 1) contest first
-  const contest = await loadActiveContest();
-  if (!contest){ boardEl.innerHTML=''; return; }
+/* === Boot & Auth wiring (race-free) === */
 
-  // 2) reflect session
-  const { data:{ session } } = await supa.auth.getSession();
-  user = session?.user || null;
+async function renderForSession(sess){
+  user = sess?.user || null;
 
   whoEl.textContent = user ? `Signed in: ${user.user_metadata?.full_name || user.email}` : 'Not signed in';
-  debugEl.textContent = session ? JSON.stringify(session, null, 2) : '(none)';
+  debugEl.textContent = sess ? JSON.stringify(sess, null, 2) : '(none)';
 
-  // 3) render appropriate state
+  // Always ensure contest first
+  if (!ACTIVE_CONTEST) {
+    const c = await loadActiveContest();
+    if (!c){ boardEl.innerHTML=''; claimBarEl.innerHTML=''; return; }
+  }
+
   if (!user){
+    boardEl.innerHTML = '';
+    claimBarEl.innerHTML = '';
+    statsEl.textContent = '';
+    document.getElementById('adminPanel')?.style && (document.getElementById('adminPanel').style.display='none');
     await loadLeaderboard();
     return;
   }
+
   await ensureConsent(user.id);
   await ensureDisplayName(user.id);
   await renderBoard();
@@ -471,28 +476,20 @@ async function boot(){
   await loadLeaderboard();
 }
 
-/* === Keep in sync on auth changes === */
-supa.auth.onAuthStateChange(async (_evt, sess)=>{
-  user = sess?.user || null;
-
-  whoEl.textContent = user ? `Signed in: ${user.user_metadata?.full_name || user.email}` : 'Not signed in';
-  debugEl.textContent = sess ? JSON.stringify(sess, null, 2) : '(none)';
-
+async function boot(){
+  // Load contest ASAP
   await loadActiveContest();
 
-  if (user){
-    await ensureConsent(user.id);
-    await ensureDisplayName(user.id);
-    await renderBoard();
-    await showAdminIfNeeded();
-    await loadLeaderboard();
-  } else {
-    boardEl.innerHTML = '';
-    claimBarEl.innerHTML = '';
-    statsEl.textContent = '';
-    document.getElementById('adminPanel')?.style && (document.getElementById('adminPanel').style.display='none');
-  }
-});
+  // Get current session and render
+  const { data:{ session } } = await supa.auth.getSession();
+  await renderForSession(session);
+
+  // Subscribe for any changes INCLUDING the initial restore
+  supa.auth.onAuthStateChange(async (event, sess)=>{
+    if (['INITIAL_SESSION','SIGNED_IN','TOKEN_REFRESHED','SIGNED_OUT'].includes(event)) {
+      await renderForSession(sess);
+    }
+  });
+}
 
 boot();
-
