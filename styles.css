@@ -131,5 +131,21 @@ body.debug #board .tile{ outline: 2px dashed rgba(255,0,180,.5); }
     --gap-y-pct: 2.0%;
     --board-scale-y: 0.95;
   }
+
+/* ====== S23 / narrow-phone alignment-only overrides ====== */
+@media (max-width: 430px){
+  :root{
+    --board-top: 27.8%;
+    --board-width: 86%;
+    --gap-x-pct: 2.0%;
+    --gap-y-pct: 1.9%;
+    --board-scale-y: 0.952;
+  }
+
+  #board.board{
+    top: var(--board-top) !important;
+    ...
+  }
 }
+
 
