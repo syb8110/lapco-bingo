@@ -1,116 +1,84 @@
-/* =========================
-   LAPCo Bingo — Responsive CSS
-   (Drop-in replacement)
-   ========================= */
-
-/* ---------- Global variables you can tweak ---------- */
 :root{
-  /* Base desktop-ish alignment */
-  --board-top: 26%;        /* vertical offset where the 5×5 grid starts on your artwork */
-  --board-width: 84%;      /* overlay grid width relative to the image */
-  --gap-x-pct: 1.7%;       /* horizontal gap BETWEEN tiles (as % of grid width) */
-  --gap-y-pct: 1.7%;       /* vertical gap BETWEEN tiles (as % of grid width) */
-  --board-scale-y: 0.958;  /* squash/stretch vertically (1.00 = none) */
-
-  /* Typography */
-  --tile-font-min: 11px;
-  --tile-font-ideal: 2.6vw;  /* scales with device width */
-  --tile-font-max: 16px;
-
-  /* Stamp sizing (as % of tile) */
-  --stamp-size: 80%;
+  /* overlay placement relative to the artwork */
+  --board-top: 26%;        /* move grid down from top of image */
+  --board-width: 83%;      /* grid width vs image width */
+  --gap-x-pct: 1.6%;       /* horizontal gap between tiles */
+  --gap-y-pct: 1.6%;       /* vertical gap between tiles */
+  --board-scale-y: 0.96;   /* slight vertical squeeze if your art’s grid isn’t perfectly square */
 }
 
-* { box-sizing: border-box; }
-html, body { height: 100%; margin: 0; }
-body {
-  font-family: system-ui, Segoe UI, Arial, sans-serif;
-  color: #fff;
-  background: #0b0b12;
-}
+*{ box-sizing:border-box }
+html, body { height:100%; margin:0 }
+body { font-family: system-ui, Segoe UI, Arial; color:#fff; background:#0b0b12; }
 
-/* ---------- Header / top bar ---------- */
+/* Header */
 .top{
   display:flex; align-items:center; justify-content:space-between;
   padding:12px 16px; background:#151526; border-bottom:1px solid #222;
+  flex-wrap: wrap; gap:10px;
 }
 .title{ font-weight:800; letter-spacing:.5px }
-.actions{ display:flex; align-items:center; gap:10px; flex-wrap:wrap }
-button{
-  padding:10px 14px; border-radius:10px; border:none;
-  background:#6d4bff; color:#fff; font-weight:700; cursor:pointer
-}
+.actions{ display:flex; align-items:center; gap:10px; flex-wrap: wrap; }
+button{ padding:10px 14px; border-radius:10px; border:none; background:#6d4bff; color:#fff; font-weight:700; cursor:pointer }
 button.ghost{ background:#2a2a44 }
 
-/* ---------- Page layout ---------- */
+/* Layout */
 main{ max-width:960px; margin:0 auto; padding:16px }
 .status{ display:flex; justify-content:space-between; align-items:center; margin:10px 0 20px; color:#d6d6ff }
 
-/* ---------- Artwork + overlay container ---------- */
+/* Artwork + overlay */
 .bg-wrap{ position:relative; max-width:900px; margin:0 auto; }
 .bg{ display:block; width:100%; height:auto; }
 
-/* ---------- 5×5 overlay grid (transparent) ---------- */
+/* Overlay grid: sized by % so it matches the image across phones */
 #board.board{
   position:absolute;
-  top: var(--board-top);
-  left: 50%;
+  top:var(--board-top);
+  left:50%;
   transform: translateX(-50%) scaleY(var(--board-scale-y));
   transform-origin: top center;
-
-  width: var(--board-width);
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-
-  /* Gaps in % so they scale exactly with the image */
-  column-gap: var(--gap-x-pct);
-  row-gap:    var(--gap-y-pct);
-
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  backdrop-filter: none;
+  width:var(--board-width);
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  column-gap:var(--gap-x-pct);
+  row-gap:var(--gap-y-pct);
+  background:transparent; border:none; box-shadow:none; backdrop-filter:none;
 }
 
-/* ---------- Tiles: invisible squares, label centered ---------- */
-#board .tile{
-  aspect-ratio: 1 / 1;
-  position: relative;
-  background: transparent;
-  border: none;
-  margin: 0;
-  padding: 0;
+/* Tiles */
+.tile{
+  aspect-ratio:1/1;
+  position:relative;
+  background:transparent;
+  border:none; margin:0; padding:0;
 
-  display:flex; align-items:center; justify-content:center;
-  text-align:center;
+  display:flex; align-items:center; justify-content:center; text-align:center;
 }
-
-#board .tile > span{
-  display:block;
+.tile > span{
   max-width:95%;
   font-weight:800;
   line-height:1.15;
-  font-size: clamp(var(--tile-font-min), var(--tile-font-ideal), var(--tile-font-max));
+  font-size: clamp(12px, 2.6vw, 18px);
   word-break: break-word;
-  overflow-wrap:anywhere;
 }
 
-/* Hide old checkmark UI */
-#board .tile .check{ display:none !important; }
+.tile .check{ display:none }
 
-/* Stamp overlay when a tile is done */
-#board .tile.done::after{
+/* Stamp overlay */
+.tile.done::after{
   content:"";
   position:absolute; inset:0;
-  background: center/var(--stamp-size) no-repeat;
+  background: center/80% no-repeat;
   opacity:.85;
   transform: rotate(-8deg);
   pointer-events:none;
 }
 
-/* ---------- Prizes / sections ---------- */
+/* Prizes card */
 .prizes{
-  max-width:900px; margin:12px auto 0; padding:12px 16px;
+  max-width:900px;
+  margin:12px auto 0;
+  padding:12px 16px;
   background:rgba(255,255,255,.06);
   border:1px solid rgba(255,255,255,.12);
   border-radius:12px;
@@ -118,59 +86,28 @@ main{ max-width:960px; margin:0 auto; padding:16px }
 .prizes h3{ margin:0 0 6px; font-size:1rem; letter-spacing:.3px }
 .prizes ul{ margin:0; padding-left:18px; line-height:1.35; font-size:.95rem }
 
-/* ---------- Optional: debugging overlay ---------- */
-body.debug #board .tile{ outline:2px dashed rgba(255,0,180,.5); }
-body.debug #board .tile.done::after{ opacity:.25 }
+/* Debug helper */
+body.debug #board .tile{ outline: 2px dashed rgba(255,0,180,.5); }
 
-/* =======================================================
-   Responsive tuning by size ranges (NOT by device model)
-   ======================================================= */
+/* ===== Phone tuning (S23 Ultra width ~ 412px logical) ===== */
+@media (max-width: 430px){
+  :root{
+    --board-top: 27.6%;
+    --board-width: 86%;
+    --gap-x-pct: 2.0%;
+    --gap-y-pct: 1.9%;
+    --board-scale-y: 0.952;
+  }
+  .tile > span{ font-size: clamp(11px, 3.0vw, 16px); }
+}
 
-/* Extra-narrow phones (≤360px) */
+/* Very narrow phones */
 @media (max-width: 360px){
   :root{
-    --board-top: 27.2%;
-    --board-width: 86%;
-    --gap-x-pct: 1.9%;
-    --gap-y-pct: 1.9%;
-    --board-scale-y: 0.955;
-
-    --tile-font-min: 10px;
-    --tile-font-ideal: 3.2vw;
-    --tile-font-max: 15px;
+    --board-top: 28.2%;
+    --board-width: 88%;
+    --gap-x-pct: 2.2%;
+    --gap-y-pct: 2.0%;
+    --board-scale-y: 0.95;
   }
 }
-
-/* Typical phones (≤480px) */
-@media (min-width: 361px) and (max-width: 480px){
-  :root{
-    --board-top: 26.8%;
-    --board-width: 85%;
-    --gap-x-pct: 1.85%;
-    --gap-y-pct: 1.85%;
-    --board-scale-y: 0.956;
-  }
-}
-
-/* Large phones / small tablets portrait (481–768px) */
-@media (min-width: 481px) and (max-width: 768px){
-  :root{
-    --board-top: 26.4%;
-    --board-width: 84%;
-    --gap-x-pct: 1.75%;
-    --gap-y-pct: 1.75%;
-    --board-scale-y: 0.958;
-  }
-}
-
-/* Tablets landscape and up (≥769px) — keep your desktop defaults or nudge slightly */
-@media (min-width: 769px){
-  :root{
-    --board-top: 26%;
-    --board-width: 84%;
-    --gap-x-pct: 1.7%;
-    --gap-y-pct: 1.7%;
-    --board-scale-y: 0.958;
-  }
-}
-
