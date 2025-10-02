@@ -135,3 +135,54 @@
   <script src="./app.js"></script>
 </body>
 </html>
+
+<link rel="stylesheet" href="./styles.css?v=19" />
+<style id="phone-fix">
+  /* S23 Ultra / narrow phones — tile grid alignment */
+  @media (max-width: 480px){
+    :root{
+      /* tweak these if needed after you see it live */
+      --board-top: 27.8%;
+      --board-width: 86%;
+      --gap-x-pct: 2.0%;
+      --gap-y-pct: 1.9%;
+      --board-scale-y: 0.952;
+    }
+  }
+
+  /* Make sure the overlay actually uses those vars */
+  #board.board{
+    width: var(--board-width) !important;
+    top: var(--board-top) !important;
+    left: 50% !important;
+    transform: translateX(-50%) scaleY(var(--board-scale-y)) !important;
+    column-gap: var(--gap-x-pct) !important;
+    row-gap:    var(--gap-y-pct) !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+
+  /* Tiles = pure squares; no padding that could throw sizing */
+  #board .tile{
+    aspect-ratio: 1 / 1;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+  }
+
+  /* Text stays readable but won’t overflow */
+  #board .tile > span{
+    display:block;
+    text-align:center;
+    line-height:1.15;
+    font-weight:800;
+    font-size: clamp(11px, 2.6vw, 16px);
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  /* Stamp stays proportional */
+  #board .tile .stamp{ background-size: 80% !important; }
+</style>
