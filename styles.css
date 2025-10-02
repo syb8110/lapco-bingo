@@ -96,3 +96,42 @@ main{ max-width:960px; margin:0 auto; padding:16px }
 /* Debug aids */
 body.debug .tile{ outline:2px dashed rgba(255,0,200,.6); }
 body.debug .tile.done::after{ opacity:.25; }
+/* ==== MOBILE TILE SCALING ONLY (non-destructive overrides) ==== */
+
+/* Ensure the overlay grid uses your % width (so it shrinks on phones) */
+#board.board {
+  width: var(--board-width) !important;   /* override any fixed/min width */
+  column-gap: clamp(6px, 1.8vw, 16px) !important;
+  row-gap:    clamp(6px, 1.8vw, 16px) !important;
+}
+
+/* Keep tiles perfectly square and shrink padding on small screens */
+#board .tile {
+  aspect-ratio: 1 / 1;
+  padding: clamp(4px, 1.2vw, 10px) !important;
+  border-radius: clamp(8px, 2vw, 14px);
+}
+
+/* Tile text scales smoothly across devices (no overflow) */
+#board .tile > span {
+  display: block;
+  text-align: center;
+  line-height: 1.15;
+  font-weight: 700;
+  font-size: clamp(11px, 2.6vw, 16px);
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Stamp stays proportional inside each tile */
+#board .tile .stamp {
+  background-size: 80% !important;
+}
+
+/* Extra narrow phones: tighten gaps just a bit */
+@media (max-width: 360px) {
+  #board.board {
+    column-gap: clamp(4px, 1.2vw, 10px) !important;
+    row-gap:    clamp(4px, 1.2vw, 10px) !important;
+  }
+}
