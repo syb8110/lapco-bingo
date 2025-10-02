@@ -54,15 +54,22 @@ function seededShuffle(arr, seedStr){
   return a;
 }
 
-/* === Leaderboard === */
+/* === Leaderboard (uses RPC if present; else degrades) === */
 async function loadLeaderboard(){
   const box = document.getElementById('leaderboard');
-  if (!box) return;
+  if (!box){ return; }
   try {
-    const { data, error } = await supa.rpc('leaderboard_public', { limit_n: 10 });
-    if (error) { console.error('leaderboard', error); box.innerHTML = '<div style="opacity:.7">Unavailable</div>'; return; }
-    if (!data || data.length === 0) { box.innerHTML = '<div style="opacity:.7">No entries yet. Be the first!</div>'; return; }
-
+    // Preferred: SQL function you created earlier
+    let { data, error } = await supa.rpc('leaderboard_public', { limit_n: 10 });
+    if (error || !data){
+      // Fallback: try a view if you have v_leaderboard_simple
+      const q = await supa.from('v_leaderboard_simple').select('*').limit(10);
+      if (!q.error) data = q.data?.map(r => ({ display_name: r.display_name || null, tiles_done: r.tiles_done })) || [];
+    }
+    if (!data || data.length === 0){
+      box.innerHTML = '<div style="opacity:.7">No entries yet. Be the first!</div>';
+      return;
+    }
     const rows = data.map((r, i) =>
       `<div style="display:flex;justify-content:space-between;padding:8px 10px;border-bottom:1px solid #222">
          <div><strong>#${i+1}</strong> ${r.display_name || 'Player'}</div>
@@ -76,7 +83,7 @@ async function loadLeaderboard(){
   }
 }
 
-/* === Active contest loader === */
+/* === Active contest loader (single source of truth) === */
 async function loadActiveContest(){
   const { data, error } = await supa
     .from('contests')
@@ -91,11 +98,13 @@ async function loadActiveContest(){
 
   ACTIVE_CONTEST = data;
 
-  // Set artwork background on .art
+  // Background from Storage (bucket "bingo"), if set
   if (ACTIVE_CONTEST.bg_image_path){
     const { data:pub } = supa.storage.from('bingo').getPublicUrl(ACTIVE_CONTEST.bg_image_path);
-    const art = document.querySelector('.art');
-    if (art && pub?.publicUrl) art.style.backgroundImage = `url('${pub.publicUrl}')`;
+    if (pub?.publicUrl){
+      const art = document.querySelector('.art');
+      if (art) art.style.backgroundImage = `url('${pub.publicUrl}')`;
+    }
   }
   return ACTIVE_CONTEST;
 }
@@ -127,36 +136,6 @@ async function ensureConsent(userId){
     const upd = await supa.from('profiles').update({ consent: true }).eq('id', userId).select().single();
     if (upd.error) { console.error('profiles update', upd.error); return; }
     modal.style.display = 'none';
-  };
-}
-
-/* === Optional: Display Name prompt (leaderboard) === */
-async function ensureDisplayName(userId){
-  const { data, error } = await supa
-    .from('profiles')
-    .select('display_name')
-    .eq('id', userId)
-    .maybeSingle();
-  if (error) { console.error('display_name select', error); return; }
-
-  const current = data?.display_name?.trim();
-  if (current) return; // already set
-
-  const modal = document.getElementById('nameModal');
-  const input = document.getElementById('nameInput');
-  const save  = document.getElementById('nameSave');
-  modal.style.display = 'flex';
-
-  const suggestion = (user?.email || '').split('@')[0];
-  if (suggestion && !input.value) input.value = suggestion;
-
-  save.onclick = async ()=>{
-    const val = (input.value || '').trim().slice(0, 40);
-    if (!val){ alert('Please enter a name'); return; }
-    const { error: updErr } = await supa.from('profiles').update({ display_name: val }).eq('id', userId);
-    if (updErr){ alert('Could not save name'); console.error(updErr); return; }
-    modal.style.display = 'none';
-    loadLeaderboard();
   };
 }
 
@@ -379,12 +358,9 @@ function setAdminMsg(msg) {
   const el = document.getElementById('adminMsg');
   if (el) el.textContent = msg;
 }
-function linesToTiles(text) {
-  return text.split('\n').map(s => s.trim()).filter(Boolean);
-}
-function tilesToLines(arr) {
-  return Array.isArray(arr) ? arr.join('\n') : '';
-}
+function linesToTiles(text) { return text.split('\n').map(s => s.trim()).filter(Boolean); }
+function tilesToLines(arr) { return Array.isArray(arr) ? arr.join('\n') : ''; }
+
 async function loadContestIntoAdmin() {
   if (!ACTIVE_CONTEST) return;
   $('#contestId').value   = ACTIVE_CONTEST.id || '';
@@ -395,17 +371,10 @@ async function saveTilesFromAdmin() {
   const contestId = $('#contestId').value.trim();
   const name      = $('#contestName').value.trim();
   const tilesArr  = linesToTiles($('#tilesText').value);
-
   if (!contestId || !name) return setAdminMsg('Contest ID and Name are required.');
   if (tilesArr.length !== 25) return setAdminMsg(`Please enter exactly 25 tiles (you have ${tilesArr.length}).`);
-
-  const { error } = await supa.from('contests').upsert({
-    id: contestId,
-    name,
-    tiles: tilesArr
-  });
+  const { error } = await supa.from('contests').upsert({ id: contestId, name, tiles: tilesArr });
   if (error) return setAdminMsg('Error saving tiles: ' + error.message);
-
   setAdminMsg('Tiles saved.');
   if (ACTIVE_CONTEST && ACTIVE_CONTEST.id === contestId) {
     ACTIVE_CONTEST.tiles = tilesArr;
@@ -415,21 +384,15 @@ async function saveTilesFromAdmin() {
 async function uploadImage(fileInputId, targetField) {
   const file = document.getElementById(fileInputId)?.files?.[0];
   if (!file) return setAdminMsg('No file selected.');
-
   const contestId = $('#contestId').value.trim() || (ACTIVE_CONTEST && ACTIVE_CONTEST.id);
   if (!contestId) return setAdminMsg('Contest ID is required first.');
-
-  // PUBLIC bucket named "bingo" in Supabase Storage
   const ext = (file.name.toLowerCase().endsWith('.png') ? '.png' : '.jpg');
   const base = (targetField === 'bg_image_path') ? 'background' : 'stamp';
   const path = `${contestId}/${base}${ext}`;
-
   const { error: upErr } = await supa.storage.from('bingo').upload(path, file, { upsert: true });
   if (upErr) return setAdminMsg('Upload failed: ' + upErr.message);
-
   const { error: updErr } = await supa.from('contests').update({ [targetField]: path }).eq('id', contestId);
   if (updErr) return setAdminMsg('Could not update contest row: ' + updErr.message);
-
   setAdminMsg(`${base} uploaded.`);
   if (ACTIVE_CONTEST && ACTIVE_CONTEST.id === contestId && targetField === 'bg_image_path') {
     const { data:pub } = supa.storage.from('bingo').getPublicUrl(path);
@@ -450,10 +413,8 @@ async function showAdminIfNeeded() {
   const panel = document.getElementById('adminPanel');
   if (!panel) return;
   if (!user) { panel.style.display = 'none'; return; }
-
   const admin = await amIAdmin();
   panel.style.display = admin ? 'block' : 'none';
-
   if (admin) {
     await loadActiveContest();
     await loadContestIntoAdmin();
@@ -472,7 +433,6 @@ document.getElementById('signout').onclick = async ()=>{
   await supa.auth.signOut();
   window.location.reload();
 };
-
 /* Email magic link login (non-Google) */
 if (emailBtn){
   emailBtn.onclick = async ()=>{
@@ -487,22 +447,48 @@ if (emailBtn){
   };
 }
 
+/* Display Name (username) prompt */
+async function ensureDisplayName(userId){
+  const { data, error } = await supa
+    .from('profiles')
+    .select('display_name')
+    .eq('id', userId)
+    .maybeSingle();
+  if (error) { console.error('display_name select', error); return; }
+  const current = data?.display_name?.trim();
+  if (current) return; // already has a username
+
+  const modal = document.getElementById('nameModal');
+  const input = document.getElementById('nameInput');
+  const save  = document.getElementById('nameSave');
+  modal.style.display = 'flex';
+
+  const suggestion = (user?.email || '').split('@')[0];
+  if (suggestion && !input.value) input.value = suggestion;
+
+  save.onclick = async ()=>{
+    const val = (input.value || '').trim().slice(0, 40);
+    if (!val){ alert('Please enter a name'); return; }
+    const { error: updErr } = await supa.from('profiles').update({ display_name: val }).eq('id', userId);
+    if (updErr){ alert('Could not save name'); console.error(updErr); return; }
+    modal.style.display = 'none';
+    loadLeaderboard(); // refresh after setting
+  };
+}
+
+/* Boot flow */
 async function boot(){
-  // make sure the token/session is fresh on hard refresh
-  await supa.auth.refreshSession();
+  // Always load contest first so board logic has context
+  await loadActiveContest();
+
+  // Reflect session
   const { data:{ session } } = await supa.auth.getSession();
   user = session?.user || null;
   whoEl.textContent = user ? `Signed in: ${user.user_metadata?.full_name || user.email}` : 'Not signed in';
   debugEl.textContent = session ? JSON.stringify(session, null, 2) : '(none)';
 
-  const contest = await loadActiveContest(); // load art/info first
-  if (!contest) {
-    loadLeaderboard();
-    return;
-  }
-
   if (!user){
-    loadLeaderboard();   // show leaderboard logged-out
+    loadLeaderboard(); // show even logged-out
     return;
   }
 
@@ -511,29 +497,29 @@ async function boot(){
   await renderBoard();
   await showAdminIfNeeded();
   loadLeaderboard();
-
-  // one-time nudge if first render loses the race
-  if (!boardEl.children.length) setTimeout(renderBoard, 200);
 }
 
+/* Keep UI in sync after OAuth redirects or sign-out */
 supa.auth.onAuthStateChange(async (_evt, sess)=>{
   user = sess?.user || null;
+  whoEl.textContent = user ? `Signed in as ${user.user_metadata?.full_name || user.email}` : 'Not signed in';
+  debugEl.textContent = sess ? JSON.stringify(sess, null, 2) : '(none)';
 
-  if (user) {
-    whoEl.textContent = `Signed in as ${user.user_metadata?.full_name || user.email}`;
+  if (user){
+    // make sure contest is loaded, then render
+    if (!ACTIVE_CONTEST) await loadActiveContest();
     await ensureConsent(user.id);
     await ensureDisplayName(user.id);
-    await loadActiveContest();
     await renderBoard();
     await showAdminIfNeeded();
     loadLeaderboard();
   } else {
-    whoEl.textContent = 'Not signed in';
     boardEl.innerHTML = '';
     claimBarEl.innerHTML = '';
     statsEl.textContent = '';
     const panel = document.getElementById('adminPanel');
     if (panel) panel.style.display = 'none';
+    loadLeaderboard();
   }
 });
 
