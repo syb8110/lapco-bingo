@@ -4,8 +4,58 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>LAPCo Bingo</title>
-  <link rel="stylesheet" href="./styles.css" />
+
+  <!-- Single, cache-busted stylesheet -->
+  <link rel="stylesheet" href="./styles.css?v=19" />
+
+  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Phone alignment overrides (must live in <head>) -->
+  <style id="phone-fix">
+    /* S23 Ultra / narrow phones — tile grid alignment */
+    @media (max-width: 480px){
+      :root{
+        --board-top: 27.8%;
+        --board-width: 86%;
+        --gap-x-pct: 2.0%;
+        --gap-y-pct: 1.9%;
+        --board-scale-y: 0.952;
+      }
+    }
+    /* Make sure the overlay actually uses those vars */
+    #board.board{
+      width: var(--board-width) !important;
+      top: var(--board-top) !important;
+      left: 50% !important;
+      transform: translateX(-50%) scaleY(var(--board-scale-y)) !important;
+      column-gap: var(--gap-x-pct) !important;
+      row-gap:    var(--gap-y-pct) !important;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      backdrop-filter: none !important;
+    }
+    /* Tiles = pure squares; no padding that could throw sizing */
+    #board .tile{
+      aspect-ratio: 1 / 1;
+      padding: 0 !important;
+      border: none !important;
+      background: transparent !important;
+    }
+    /* Text stays readable but won’t overflow */
+    #board .tile > span{
+      display:block;
+      text-align:center;
+      line-height:1.15;
+      font-weight:800;
+      font-size: clamp(11px, 2.6vw, 16px);
+      word-wrap: break-word;
+      overflow-wrap: anywhere;
+    }
+    /* Stamp stays proportional */
+    #board .tile .stamp{ background-size: 80% !important; }
+  </style>
 </head>
 <body>
 
@@ -15,27 +65,26 @@
       <h3 style="margin:0 0 8px">Media Waiver</h3>
       <p style="margin:0 0 12px;line-height:1.35">
         By participating in contests and games, I consent to LAPCo using my submitted photos, videos, display name, and progress
-  for promotional purposes (website, social media, in-studio). Participation is voluntary—join only if you agree.
+        for promotional purposes (website, social media, in-studio). Participation is voluntary—join only if you agree.
       </p>
       <button id="consentAgree" style="padding:10px 14px;border-radius:10px;border:none;background:#6d4bff;color:#fff;font-weight:800;cursor:pointer">I Agree</button>
     </div>
   </div>
 
   <header class="top">
-  <div class="title">LAPCo Bingo</div>
-  <div class="actions">
-    <div id="who">Not signed in</div>
+    <div class="title">LAPCo Bingo</div>
+    <div class="actions">
+      <div id="who">Not signed in</div>
 
-    <!-- Email login (magic link) -->
-    <input id="emailInput" type="email" placeholder="you@example.com" class="env" style="min-width:220px" />
-    <button id="emailLogin">Email me a login link</button>
+      <!-- Email login (magic link) -->
+      <input id="emailInput" type="email" placeholder="you@example.com" class="env" style="min-width:220px" />
+      <button id="emailLogin">Email me a login link</button>
 
-    <!-- Google login -->
-    <button id="signin">Sign in with Google</button>
-    <button id="signout" class="ghost">Sign out</button>
-  </div>
-</header>
-
+      <!-- Google login -->
+      <button id="signin">Sign in with Google</button>
+      <button id="signout" class="ghost">Sign out</button>
+    </div>
+  </header>
 
   <main>
     <section class="status">
@@ -56,73 +105,75 @@
         <li><strong>Blackout:</strong> Entry to $100 Visa gift-card drawing</li>
       </ul>
     </section>
-    <!-- ===== Instructions ===== -->
-<section style="max-width:900px;margin:24px auto 0;padding:16px;background:#111;border:1px solid #333;border-radius:12px">
-  <h3 style="margin-top:0">How to Play</h3>
-  <ol style="line-height:1.5;margin:0;padding-left:18px">
-    <li>Sign in and complete squares that match your activities.</li>
-    <li>Tap a square to stamp it when you’ve done it.</li>
-    <li>When you get <strong>BINGO</strong> (any 5-in-a-row), click the yellow “Email studio &amp; log Bingo” button.</li>
-    <li>Keep going for <strong>BLACKOUT</strong> (all 25) and click the green button to log it.</li>
-  </ol>
-  <p style="margin:10px 0 0; opacity:.9">
-    Questions? Email <a href="mailto:powercatpilates@gmail.com">powercatpilates@gmail.com</a>.
-  </p>
-</section>
 
-<!-- ===== Leaderboard ===== -->
-<section style="max-width:900px;margin:16px auto 0;padding:16px;background:#111;border:1px solid #333;border-radius:12px">
-  <h3 style="margin-top:0">Leaderboard (Top 10)</h3>
-  <div id="leaderboard">
-    <div style="opacity:.7">Loading…</div>
-  </div>
-</section>
+    <!-- Instructions -->
+    <section style="max-width:900px;margin:24px auto 0;padding:16px;background:#111;border:1px solid #333;border-radius:12px">
+      <h3 style="margin-top:0">How to Play</h3>
+      <ol style="line-height:1.5;margin:0;padding-left:18px">
+        <li>Sign in and complete squares that match your activities.</li>
+        <li>Tap a square to stamp it when you’ve done it.</li>
+        <li>When you get <strong>BINGO</strong> (any 5-in-a-row), click the yellow “Email studio &amp; log Bingo” button.</li>
+        <li>Keep going for <strong>BLACKOUT</strong> (all 25) and click the green button to log it.</li>
+      </ol>
+      <p style="margin:10px 0 0; opacity:.9">
+        Questions? Email <a href="mailto:powercatpilates@gmail.com">powercatpilates@gmail.com</a>.
+      </p>
+    </section>
 
-<!-- ===== ADMIN PANEL (shows only for admins) ===== -->
-<section id="adminPanel" style="display:none; max-width:900px; margin:24px auto; padding:16px; background:#111; border:1px solid #333; border-radius:12px">
-  <h3 style="margin-top:0">Admin: Manage Contest</h3>
-
-  <div style="display:grid; gap:12px">
-    <label>Contest ID
-      <input id="contestId" class="env" placeholder="October2025">
-    </label>
-    <label>Contest Name
-      <input id="contestName" class="env" placeholder="K-State October Bingo">
-    </label>
-
-    <label>Tiles (enter exactly 25 lines)</label>
-    <textarea id="tilesText" rows="10" style="width:100%; background:#0f0f18; color:#eaeaff; border:1px solid #3b3b55; border-radius:8px; padding:8px"></textarea>
-
-    <div style="display:flex; gap:12px; flex-wrap:wrap">
-      <div>
-        <label>Background image (PNG/JPG)</label><br>
-        <input type="file" id="bgFile" accept="image/*">
+    <!-- Leaderboard -->
+    <section style="max-width:900px;margin:16px auto 0;padding:16px;background:#111;border:1px solid #333;border-radius:12px">
+      <h3 style="margin-top:0">Leaderboard (Top 10)</h3>
+      <div id="leaderboard">
+        <div style="opacity:.7">Loading…</div>
       </div>
-      <div>
-        <label>Stamp image (PNG)</label><br>
-        <input type="file" id="stampFile" accept="image/*">
+    </section>
+
+    <!-- ADMIN PANEL (shows only for admins) -->
+    <section id="adminPanel" style="display:none; max-width:900px; margin:24px auto; padding:16px; background:#111; border:1px solid #333; border-radius:12px">
+      <h3 style="margin-top:0">Admin: Manage Contest</h3>
+
+      <div style="display:grid; gap:12px">
+        <label>Contest ID
+          <input id="contestId" class="env" placeholder="October2025">
+        </label>
+        <label>Contest Name
+          <input id="contestName" class="env" placeholder="K-State October Bingo">
+        </label>
+
+        <label>Tiles (enter exactly 25 lines)</label>
+        <textarea id="tilesText" rows="10" style="width:100%; background:#0f0f18; color:#eaeaff; border:1px solid #3b3b55; border-radius:8px; padding:8px"></textarea>
+
+        <div style="display:flex; gap:12px; flex-wrap:wrap">
+          <div>
+            <label>Background image (PNG/JPG)</label><br>
+            <input type="file" id="bgFile" accept="image/*">
+          </div>
+          <div>
+            <label>Stamp image (PNG)</label><br>
+            <input type="file" id="stampFile" accept="image/*">
+          </div>
+        </div>
+
+        <div style="display:flex; gap:8px; flex-wrap:wrap">
+          <button id="saveTiles">Save tiles</button>
+          <button id="uploadBg" class="ghost">Upload background</button>
+          <button id="uploadStamp" class="ghost">Upload stamp</button>
+          <button id="setActive" class="ghost">Set active contest</button>
+        </div>
+
+        <div id="adminMsg" style="opacity:.9"></div>
+      </div>
+    </section>
+
+    <!-- Display-name modal -->
+    <div id="nameModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center">
+      <div style="background:#111;border:1px solid #333;border-radius:12px;max-width:420px;width:92%;padding:18px">
+        <h3 style="margin:0 0 8px">Pick a display name</h3>
+        <p style="margin:0 0 12px;opacity:.85">This shows on the leaderboard instead of your email.</p>
+        <input id="nameInput" placeholder="e.g., Sam M." style="width:100%;padding:10px;border-radius:10px;border:1px solid #333;background:#0e0e0e;color:#eee;margin-bottom:12px">
+        <button id="nameSave" style="padding:10px 14px;border-radius:10px;border:none;background:#6d4bff;color:#fff;font-weight:800;cursor:pointer">Save</button>
       </div>
     </div>
-
-    <div style="display:flex; gap:8px; flex-wrap:wrap">
-      <button id="saveTiles">Save tiles</button>
-      <button id="uploadBg" class="ghost">Upload background</button>
-      <button id="uploadStamp" class="ghost">Upload stamp</button>
-      <button id="setActive" class="ghost">Set active contest</button>
-    </div>
-
-    <div id="adminMsg" style="opacity:.9"></div>
-  </div>
-</section>
-    
-<div id="nameModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center">
-  <div style="background:#111;border:1px solid #333;border-radius:12px;max-width:420px;width:92%;padding:18px">
-    <h3 style="margin:0 0 8px">Pick a display name</h3>
-    <p style="margin:0 0 12px;opacity:.85">This shows on the leaderboard instead of your email.</p>
-    <input id="nameInput" placeholder="e.g., Sam M." style="width:100%;padding:10px;border-radius:10px;border:1px solid #333;background:#0e0e0e;color:#eee;margin-bottom:12px">
-    <button id="nameSave" style="padding:10px 14px;border-radius:10px;border:none;background:#6d4bff;color:#fff;font-weight:800;cursor:pointer">Save</button>
-  </div>
-</div>
 
     <section class="footer">
       <details>
@@ -136,53 +187,3 @@
 </body>
 </html>
 
-<link rel="stylesheet" href="./styles.css?v=19" />
-<style id="phone-fix">
-  /* S23 Ultra / narrow phones — tile grid alignment */
-  @media (max-width: 480px){
-    :root{
-      /* tweak these if needed after you see it live */
-      --board-top: 27.8%;
-      --board-width: 86%;
-      --gap-x-pct: 2.0%;
-      --gap-y-pct: 1.9%;
-      --board-scale-y: 0.952;
-    }
-  }
-
-  /* Make sure the overlay actually uses those vars */
-  #board.board{
-    width: var(--board-width) !important;
-    top: var(--board-top) !important;
-    left: 50% !important;
-    transform: translateX(-50%) scaleY(var(--board-scale-y)) !important;
-    column-gap: var(--gap-x-pct) !important;
-    row-gap:    var(--gap-y-pct) !important;
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-  }
-
-  /* Tiles = pure squares; no padding that could throw sizing */
-  #board .tile{
-    aspect-ratio: 1 / 1;
-    padding: 0 !important;
-    border: none !important;
-    background: transparent !important;
-  }
-
-  /* Text stays readable but won’t overflow */
-  #board .tile > span{
-    display:block;
-    text-align:center;
-    line-height:1.15;
-    font-weight:800;
-    font-size: clamp(11px, 2.6vw, 16px);
-    word-wrap: break-word;
-    overflow-wrap: anywhere;
-  }
-
-  /* Stamp stays proportional */
-  #board .tile .stamp{ background-size: 80% !important; }
-</style>
