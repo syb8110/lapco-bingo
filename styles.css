@@ -31,8 +31,13 @@ button.ghost{ background:#2a2a44 }
 main{ max-width:960px; margin:0 auto; padding:16px }
 .status{ display:flex; justify-content:space-between; align-items:center; margin:10px 0 20px; color:#d6d6ff }
 
-/* Artwork container + background (no <img>) */
-.bg-wrap { max-width: 900px; margin: 0 auto; }
+/* Artwork container + background */
+.bg-wrap {
+  position: relative;       /* <-- this is the critical fix */
+  max-width: 900px;
+  margin: 0 auto;
+}
+
 .art {
   position: relative;
   width: 100%;
@@ -42,6 +47,7 @@ main{ max-width:960px; margin:0 auto; padding:16px }
   background-repeat: no-repeat;
   background-position: top center;
 }
+
 
 /* Overlay grid sits inside the same box so %s align perfectly */
 #board.board{
@@ -56,6 +62,9 @@ main{ max-width:960px; margin:0 auto; padding:16px }
   column-gap: var(--gap-x-pct);
   row-gap: var(--gap-y-pct);
   background: transparent; border: none; box-shadow: none; backdrop-filter: none;
+  #board.board {
+  z-index: 1;              /* keep grid above artwork */
+  pointer-events: auto;    /* allow clicks */
 }
 
 /* Tiles */
