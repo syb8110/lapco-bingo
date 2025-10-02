@@ -1,6 +1,6 @@
 :root{
   /* Set this to your artwork’s real aspect ratio (width/height). Example: 1080/1920 */
-  --art-ratio: 9 / 16;
+  --art-ratio: 1242 / 2208;
 
   /* Overlay placement relative to the artwork */
   --board-top: 26%;        /* move grid down from top of art box */
