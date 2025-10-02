@@ -1,12 +1,16 @@
 :root{
-  /* overlay placement relative to the artwork */
-  --board-top: 26%;        /* move grid down from top of image */
-  --board-width: 83%;      /* grid width vs image width */
-  --gap-x-pct: 1.6%;       /* horizontal gap between tiles */
-  --gap-y-pct: 1.6%;       /* vertical gap between tiles */
-  --board-scale-y: 0.96;   /* slight vertical squeeze if your art’s grid isn’t perfectly square */
+  /* Set this to your artwork’s real aspect ratio (width/height). Example: 1080/1920 */
+  --art-ratio: 9 / 16;
+
+  /* Overlay placement relative to the artwork */
+  --board-top: 26%;        /* move grid down from top of art box */
+  --board-width: 83%;      /* grid width vs art box width */
+  --gap-x-pct: 1.6%;       /* horizontal gap between tiles (as % of grid width) */
+  --gap-y-pct: 1.6%;       /* vertical gap between tiles (as % of grid width) */
+  --board-scale-y: 0.96;   /* slight vertical squeeze if art grid isn’t perfectly square */
 }
 
+/* Base */
 *{ box-sizing:border-box }
 html, body { height:100%; margin:0 }
 body { font-family: system-ui, Segoe UI, Arial; color:#fff; background:#0b0b12; }
@@ -21,36 +25,45 @@ body { font-family: system-ui, Segoe UI, Arial; color:#fff; background:#0b0b12; 
 .actions{ display:flex; align-items:center; gap:10px; flex-wrap: wrap; }
 button{ padding:10px 14px; border-radius:10px; border:none; background:#6d4bff; color:#fff; font-weight:700; cursor:pointer }
 button.ghost{ background:#2a2a44 }
+.env{ padding:8px 10px;border-radius:8px;border:1px solid #3b3b55;background:#10101b;color:#eaeaff; }
 
 /* Layout */
 main{ max-width:960px; margin:0 auto; padding:16px }
 .status{ display:flex; justify-content:space-between; align-items:center; margin:10px 0 20px; color:#d6d6ff }
 
-/* Artwork + overlay */
-.bg-wrap{ position:relative; max-width:900px; margin:0 auto; }
-.bg{ display:block; width:100%; height:auto; }
+/* Artwork container + background (no <img>) */
+.bg-wrap { max-width: 900px; margin: 0 auto; }
+.art {
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--art-ratio);
+  background-image: url('/october-halloween-bingo.png'); /* default; JS can override */
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: top center;
+}
 
-/* Overlay grid: sized by % so it matches the image across phones */
+/* Overlay grid sits inside the same box so %s align perfectly */
 #board.board{
-  position:absolute;
-  top:var(--board-top);
-  left:50%;
+  position: absolute;
+  top: var(--board-top);
+  left: 50%;
   transform: translateX(-50%) scaleY(var(--board-scale-y));
   transform-origin: top center;
-  width:var(--board-width);
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-  column-gap:var(--gap-x-pct);
-  row-gap:var(--gap-y-pct);
-  background:transparent; border:none; box-shadow:none; backdrop-filter:none;
+  width: var(--board-width);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  column-gap: var(--gap-x-pct);
+  row-gap: var(--gap-y-pct);
+  background: transparent; border: none; box-shadow: none; backdrop-filter: none;
 }
 
 /* Tiles */
 .tile{
-  aspect-ratio:1/1;
-  position:relative;
-  background:transparent;
-  border:none; margin:0; padding:0;
+  aspect-ratio: 1/1;
+  position: relative;
+  background: transparent;
+  border: none; margin: 0; padding: 0;
 
   display:flex; align-items:center; justify-content:center; text-align:center;
 }
@@ -61,7 +74,6 @@ main{ max-width:960px; margin:0 auto; padding:16px }
   font-size: clamp(12px, 2.6vw, 18px);
   word-break: break-word;
 }
-
 .tile .check{ display:none }
 
 /* Stamp overlay */
@@ -111,3 +123,4 @@ body.debug #board .tile{ outline: 2px dashed rgba(255,0,180,.5); }
     --board-scale-y: 0.95;
   }
 }
+
