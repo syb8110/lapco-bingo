@@ -54,22 +54,31 @@ function seededShuffle(arr, seedStr){
   return a;
 }
 
-/* === Leaderboard (uses RPC if present; else degrades) === */
+/* ---------- Artwork loader: set background AND auto-detect aspect ratio ---------- */
+async function setArtBackground(url){
+  const art = document.querySelector('.art');
+  if (!art) return;
+  art.style.backgroundImage = `url('${url}')`;
+  await new Promise((resolve)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const ratio = img.naturalWidth / img.naturalHeight;  // width / height
+      document.documentElement.style.setProperty('--art-ratio', ratio);
+      resolve();
+    };
+    img.onerror = resolve;
+    img.src = url;
+  });
+}
+
+/* ---------- Leaderboard ---------- */
 async function loadLeaderboard(){
   const box = document.getElementById('leaderboard');
-  if (!box){ return; }
+  if (!box) return;
   try {
-    // Preferred: SQL function you created earlier
-    let { data, error } = await supa.rpc('leaderboard_public', { limit_n: 10 });
-    if (error || !data){
-      // Fallback: try a view if you have v_leaderboard_simple
-      const q = await supa.from('v_leaderboard_simple').select('*').limit(10);
-      if (!q.error) data = q.data?.map(r => ({ display_name: r.display_name || null, tiles_done: r.tiles_done })) || [];
-    }
-    if (!data || data.length === 0){
-      box.innerHTML = '<div style="opacity:.7">No entries yet. Be the first!</div>';
-      return;
-    }
+    const { data, error } = await supa.rpc('leaderboard_public', { limit_n: 10 });
+    if (error) { console.error('leaderboard', error); box.innerHTML = '<div style="opacity:.7">Unavailable</div>'; return; }
+    if (!data || data.length === 0) { box.innerHTML = '<div style="opacity:.7">No entries yet. Be the first!</div>'; return; }
     const rows = data.map((r, i) =>
       `<div style="display:flex;justify-content:space-between;padding:8px 10px;border-bottom:1px solid #222">
          <div><strong>#${i+1}</strong> ${r.display_name || 'Player'}</div>
@@ -83,7 +92,7 @@ async function loadLeaderboard(){
   }
 }
 
-/* === Active contest loader (single source of truth) === */
+/* ---------- Active contest loader (sets background + ratio FIRST) ---------- */
 async function loadActiveContest(){
   const { data, error } = await supa
     .from('contests')
@@ -93,23 +102,24 @@ async function loadActiveContest(){
 
   if (error || !data){
     console.error('No active contest', error);
+    await setArtBackground('/october-halloween-bingo.png'); // fallback still works
     return null;
   }
 
   ACTIVE_CONTEST = data;
 
-  // Background from Storage (bucket "bingo"), if set
+  // Use Storage art if present; else fallback
+  let artUrl = '/october-halloween-bingo.png';
   if (ACTIVE_CONTEST.bg_image_path){
-    const { data:pub } = supa.storage.from('bingo').getPublicUrl(ACTIVE_CONTEST.bg_image_path);
-    if (pub?.publicUrl){
-      const art = document.querySelector('.art');
-      if (art) art.style.backgroundImage = `url('${pub.publicUrl}')`;
-    }
+    const { data: pub } = supa.storage.from('bingo').getPublicUrl(ACTIVE_CONTEST.bg_image_path);
+    if (pub?.publicUrl) artUrl = pub.publicUrl;
   }
+
+  await setArtBackground(artUrl); // also sets --art-ratio
   return ACTIVE_CONTEST;
 }
 
-/* === Consent (shows once) === */
+/* ---------- Consent (shows once) ---------- */
 async function ensureConsent(userId){
   let { data, error } = await supa
     .from('profiles')
@@ -139,11 +149,10 @@ async function ensureConsent(userId){
   };
 }
 
-/* === Tiles for this contest (from DB, fallback if missing) === */
+/* ---------- Tiles (from contest row if present; fallback otherwise) ---------- */
 function getContestTiles(){
   const t = Array.isArray(ACTIVE_CONTEST?.tiles) ? ACTIVE_CONTEST.tiles : null;
   if (t && t.length === 25) return t;
-  // Fallback (current KSU set)
   return [
     "Aerial class","Aerial class",
     "Reformer class","Reformer class",
@@ -165,7 +174,7 @@ function getContestTiles(){
   ];
 }
 
-/* === Stamp URL (contest-specific or fallback) === */
+/* ---------- Stamp URL ---------- */
 function getStampUrl(){
   if (ACTIVE_CONTEST?.stamp_image_path){
     const { data:pub } = supa.storage.from('bingo').getPublicUrl(ACTIVE_CONTEST.stamp_image_path);
@@ -174,7 +183,7 @@ function getStampUrl(){
   return '/apple-core-stamp.png';
 }
 
-/* === Board labels per user (contest-scoped, locked) === */
+/* ---------- Per-user board labels (contest-scoped, locked) ---------- */
 async function loadUserBoardLabels(){
   const contestId = ACTIVE_CONTEST.id;
 
@@ -215,7 +224,7 @@ async function loadUserBoardLabels(){
   return rows;
 }
 
-/* === Completions (stamps) === */
+/* ---------- Completions (stamps) ---------- */
 async function loadCompletions(){
   const contestId = ACTIVE_CONTEST.id;
   const { data, error } = await supa
@@ -229,13 +238,11 @@ async function loadCompletions(){
 async function setCompletion(tile_code, done){
   const contestId = ACTIVE_CONTEST.id;
   if (done){
-    const { error } = await supa
-      .from('completions')
+    const { error } = await supa.from('completions')
       .insert({ user_id: user.id, contest_id: contestId, tile_code });
     if (error) console.error('completion insert', error);
   } else {
-    const { error } = await supa
-      .from('completions')
+    const { error } = await supa.from('completions')
       .delete()
       .eq('user_id', user.id)
       .eq('contest_id', contestId)
@@ -244,7 +251,7 @@ async function setCompletion(tile_code, done){
   }
 }
 
-/* === Claims (Bingo/Blackout) === */
+/* ---------- Claims (Bingo/Blackout) ---------- */
 async function renderClaimBar(done){
   const bar = claimBarEl;
   if(!user){ bar.innerHTML=''; return; }
@@ -295,7 +302,7 @@ async function renderClaimBar(done){
   }
 }
 
-/* === Render board === */
+/* ---------- Render board ---------- */
 async function renderBoard(){
   const labels = await loadUserBoardLabels();
   let done = await loadCompletions();
@@ -343,7 +350,7 @@ async function renderBoard(){
   renderClaimBar(done);
 }
 
-/* === Admin helpers === */
+/* ---------- Admin helpers ---------- */
 async function amIAdmin() {
   if (!user) return false;
   const { data, error } = await supa
@@ -358,9 +365,12 @@ function setAdminMsg(msg) {
   const el = document.getElementById('adminMsg');
   if (el) el.textContent = msg;
 }
-function linesToTiles(text) { return text.split('\n').map(s => s.trim()).filter(Boolean); }
-function tilesToLines(arr) { return Array.isArray(arr) ? arr.join('\n') : ''; }
-
+function linesToTiles(text) {
+  return text.split('\n').map(s => s.trim()).filter(Boolean);
+}
+function tilesToLines(arr) {
+  return Array.isArray(arr) ? arr.join('\n') : '';
+}
 async function loadContestIntoAdmin() {
   if (!ACTIVE_CONTEST) return;
   $('#contestId').value   = ACTIVE_CONTEST.id || '';
@@ -396,8 +406,8 @@ async function uploadImage(fileInputId, targetField) {
   setAdminMsg(`${base} uploaded.`);
   if (ACTIVE_CONTEST && ACTIVE_CONTEST.id === contestId && targetField === 'bg_image_path') {
     const { data:pub } = supa.storage.from('bingo').getPublicUrl(path);
-    const art = document.querySelector('.art');
-    if (art && pub?.publicUrl) art.style.backgroundImage = `url('${pub.publicUrl}')`;
+    const img = document.querySelector('.art'); // background on .art now
+    if (img && pub?.publicUrl) await setArtBackground(pub.publicUrl);
   }
 }
 async function setActiveContest() {
@@ -425,7 +435,7 @@ async function showAdminIfNeeded() {
   }
 }
 
-/* === Auth & boot === */
+/* ---------- Auth & boot ---------- */
 document.getElementById('signin').onclick = async ()=>{
   await supa.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin }});
 };
@@ -447,7 +457,7 @@ if (emailBtn){
   };
 }
 
-/* Display Name (username) prompt */
+/* Display name prompt (leaderboard username) */
 async function ensureDisplayName(userId){
   const { data, error } = await supa
     .from('profiles')
@@ -456,70 +466,59 @@ async function ensureDisplayName(userId){
     .maybeSingle();
   if (error) { console.error('display_name select', error); return; }
   const current = data?.display_name?.trim();
-  if (current) return; // already has a username
-
+  if (current) return;
   const modal = document.getElementById('nameModal');
   const input = document.getElementById('nameInput');
   const save  = document.getElementById('nameSave');
   modal.style.display = 'flex';
-
   const suggestion = (user?.email || '').split('@')[0];
   if (suggestion && !input.value) input.value = suggestion;
-
   save.onclick = async ()=>{
     const val = (input.value || '').trim().slice(0, 40);
     if (!val){ alert('Please enter a name'); return; }
     const { error: updErr } = await supa.from('profiles').update({ display_name: val }).eq('id', userId);
     if (updErr){ alert('Could not save name'); console.error(updErr); return; }
     modal.style.display = 'none';
-    loadLeaderboard(); // refresh after setting
+    loadLeaderboard();
   };
 }
 
-/* Boot flow */
+/* Boot order: contest/art FIRST, then board */
 async function boot(){
-  // Always load contest first so board logic has context
-  await loadActiveContest();
-
-  // Reflect session
   const { data:{ session } } = await supa.auth.getSession();
   user = session?.user || null;
   whoEl.textContent = user ? `Signed in: ${user.user_metadata?.full_name || user.email}` : 'Not signed in';
   debugEl.textContent = session ? JSON.stringify(session, null, 2) : '(none)';
 
-  if (!user){
-    loadLeaderboard(); // show even logged-out
-    return;
-  }
+  await loadActiveContest();   // sets art + --art-ratio first
+  loadLeaderboard();           // can show logged-out too
+
+  if (!user) return;
 
   await ensureConsent(user.id);
   await ensureDisplayName(user.id);
   await renderBoard();
   await showAdminIfNeeded();
-  loadLeaderboard();
 }
 
-/* Keep UI in sync after OAuth redirects or sign-out */
+/* React to auth state changes */
 supa.auth.onAuthStateChange(async (_evt, sess)=>{
   user = sess?.user || null;
-  whoEl.textContent = user ? `Signed in as ${user.user_metadata?.full_name || user.email}` : 'Not signed in';
-  debugEl.textContent = sess ? JSON.stringify(sess, null, 2) : '(none)';
-
-  if (user){
-    // make sure contest is loaded, then render
-    if (!ACTIVE_CONTEST) await loadActiveContest();
+  if (user) {
+    whoEl.textContent = `Signed in as ${user.user_metadata?.full_name || user.email}`;
     await ensureConsent(user.id);
     await ensureDisplayName(user.id);
+    await loadActiveContest(); // make sure art/ratio are ready
     await renderBoard();
     await showAdminIfNeeded();
     loadLeaderboard();
   } else {
+    whoEl.textContent = 'Not signed in';
     boardEl.innerHTML = '';
     claimBarEl.innerHTML = '';
     statsEl.textContent = '';
     const panel = document.getElementById('adminPanel');
     if (panel) panel.style.display = 'none';
-    loadLeaderboard();
   }
 });
 
