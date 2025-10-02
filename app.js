@@ -2,7 +2,7 @@
    LAPCo Bingo — Production
    ========================= */
 
-/* === Supabase config (public anon key is OK to embed) === */
+/* === Supabase config === */
 const SUPABASE_URL = 'https://flknutfjusmbxfgdthcu.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_805-pUNi1vu6mhUA7Y9UTw_Yv8QAKbD';
 const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -53,16 +53,22 @@ function seededShuffle(arr, seedStr){
   }
   return a;
 }
+
+/* ===== Load/Guard helpers (prevent race conditions) ===== */
+function isReady(){ return !!(user && ACTIVE_CONTEST); }
+async function safeContestId(){
+  if (!ACTIVE_CONTEST) throw new Error('Active contest not loaded');
+  return ACTIVE_CONTEST.id;
+}
+
+/* === Leaderboard === */
 async function loadLeaderboard(){
   const box = document.getElementById('leaderboard');
   if (!box) return;
   try {
-    // call the SQL function we created
     const { data, error } = await supa.rpc('leaderboard_public', { limit_n: 10 });
-    if (error) { console.error('leaderboard', error); box.innerHTML = '<div style="opacity:.7">Unavailable</div>'; return; }
-    if (!data || data.length === 0) { box.innerHTML = '<div style="opacity:.7">No entries yet. Be the first!</div>'; return; }
-
-    // render simple list
+    if (error){ console.error('leaderboard', error); box.innerHTML = '<div style="opacity:.7">Unavailable</div>'; return; }
+    if (!data || data.length === 0){ box.innerHTML = '<div style="opacity:.7">No entries yet. Be the first!</div>'; return; }
     const rows = data.map((r, i) =>
       `<div style="display:flex;justify-content:space-between;padding:8px 10px;border-bottom:1px solid #222">
          <div><strong>#${i+1}</strong> ${r.display_name || 'Player'}</div>
@@ -71,27 +77,21 @@ async function loadLeaderboard(){
     ).join('');
     box.innerHTML = rows;
   } catch (e) {
-    console.error(e);
-    box.innerHTML = '<div style="opacity:.7">Unavailable</div>';
+    console.error(e); box.innerHTML = '<div style="opacity:.7">Unavailable</div>';
   }
 }
 
-/* === Active contest loader (single source of truth) === */
+/* === Active contest loader === */
 async function loadActiveContest(){
   const { data, error } = await supa
     .from('contests')
     .select('*')
     .eq('is_active', true)
     .maybeSingle();
-
-  if (error || !data){
-    console.error('No active contest', error);
-    return null;
-  }
-
+  if (error || !data){ console.error('No active contest', error); return null; }
   ACTIVE_CONTEST = data;
 
-  // Swap background if stored in bucket "bingo"
+  // background image from Storage bucket "bingo"
   if (ACTIVE_CONTEST.bg_image_path){
     const { data:pub } = supa.storage.from('bingo').getPublicUrl(ACTIVE_CONTEST.bg_image_path);
     const img = document.querySelector('.bg');
@@ -100,41 +100,58 @@ async function loadActiveContest(){
   return ACTIVE_CONTEST;
 }
 
-/* === Consent (shows once) === */
+/* === Consent (once) === */
 async function ensureConsent(userId){
   let { data, error } = await supa
-    .from('profiles')
-    .select('consent')
-    .eq('id', userId)
-    .maybeSingle();
-  if (error) { console.error('profiles select', error); return; }
+    .from('profiles').select('consent').eq('id', userId).maybeSingle();
+  if (error){ console.error('profiles select', error); return; }
 
   if (!data){
-    const ins = await supa
-      .from('profiles')
-      .upsert({ id: userId, consent: false })
-      .select('consent')
-      .single();
-    if (ins.error) { console.error('profiles upsert', ins.error); return; }
+    const ins = await supa.from('profiles').upsert({ id: userId, consent: false }).select('consent').single();
+    if (ins.error){ console.error('profiles upsert', ins.error); return; }
     data = ins.data;
   }
-
   if (data?.consent === true) return;
 
   const modal = document.getElementById('consentModal');
   modal.style.display = 'flex';
   document.getElementById('consentAgree').onclick = async ()=>{
     const upd = await supa.from('profiles').update({ consent: true }).eq('id', userId).select().single();
-    if (upd.error) { console.error('profiles update', upd.error); return; }
+    if (upd.error){ console.error('profiles update', upd.error); return; }
     modal.style.display = 'none';
   };
 }
 
-/* === Tiles for this contest (from DB, fallback if missing) === */
+/* === Display name (username) once) === */
+async function ensureDisplayName(userId){
+  const { data, error } = await supa
+    .from('profiles').select('display_name').eq('id', userId).maybeSingle();
+  if (error){ console.error('display_name select', error); return; }
+  const current = data?.display_name?.trim();
+  if (current) return;
+
+  const modal = document.getElementById('nameModal');
+  const input = document.getElementById('nameInput');
+  const save  = document.getElementById('nameSave');
+  modal.style.display = 'flex';
+
+  const suggestion = (user?.email || '').split('@')[0];
+  if (suggestion && !input.value) input.value = suggestion;
+
+  save.onclick = async ()=>{
+    const val = (input.value || '').trim().slice(0, 40);
+    if (!val){ alert('Please enter a name'); return; }
+    const { error: updErr } = await supa.from('profiles').update({ display_name: val }).eq('id', userId);
+    if (updErr){ alert('Could not save name'); console.error(updErr); return; }
+    modal.style.display = 'none';
+    loadLeaderboard();
+  };
+}
+
+/* === Tiles for this contest (fallback if missing) === */
 function getContestTiles(){
   const t = Array.isArray(ACTIVE_CONTEST?.tiles) ? ACTIVE_CONTEST.tiles : null;
   if (t && t.length === 25) return t;
-  // Fallback (current KSU set)
   return [
     "Aerial class","Aerial class",
     "Reformer class","Reformer class",
@@ -156,7 +173,7 @@ function getContestTiles(){
   ];
 }
 
-/* === Stamp URL (contest-specific or fallback) === */
+/* === Stamp URL === */
 function getStampUrl(){
   if (ACTIVE_CONTEST?.stamp_image_path){
     const { data:pub } = supa.storage.from('bingo').getPublicUrl(ACTIVE_CONTEST.stamp_image_path);
@@ -165,9 +182,10 @@ function getStampUrl(){
   return '/apple-core-stamp.png';
 }
 
-/* === Board labels per user (contest-scoped, locked) === */
+/* === User board labels (contest-scoped) === */
 async function loadUserBoardLabels(){
-  const contestId = ACTIVE_CONTEST.id;
+  if (!isReady()) return [];
+  const contestId = await safeContestId();
 
   const { data, error } = await supa
     .from('user_card_cells')
@@ -181,11 +199,8 @@ async function loadUserBoardLabels(){
   if (data && data.length === 25) return data;
 
   if (data && data.length > 0){
-    const del = await supa
-      .from('user_card_cells')
-      .delete()
-      .eq('user_id', user.id)
-      .eq('contest_id', contestId);
+    const del = await supa.from('user_card_cells')
+      .delete().eq('user_id', user.id).eq('contest_id', contestId);
     if (del.error){ console.error('user_card_cells cleanup', del.error); }
   }
 
@@ -208,37 +223,34 @@ async function loadUserBoardLabels(){
 
 /* === Completions (stamps) === */
 async function loadCompletions(){
-  const contestId = ACTIVE_CONTEST.id;
+  if (!isReady()) return [];
+  const contestId = await safeContestId();
   const { data, error } = await supa
-    .from('completions')
-    .select('tile_code')
-    .eq('user_id', user.id)
-    .eq('contest_id', contestId);
+    .from('completions').select('tile_code')
+    .eq('user_id', user.id).eq('contest_id', contestId);
   if (error){ console.error('completions select', error); return []; }
   return (data||[]).map(r=>r.tile_code);
 }
 async function setCompletion(tile_code, done){
-  const contestId = ACTIVE_CONTEST.id;
+  if (!isReady()) return;
+  const contestId = await safeContestId();
   if (done){
     const { error } = await supa
-      .from('completions')
-      .insert({ user_id: user.id, contest_id: contestId, tile_code });
+      .from('completions').insert({ user_id: user.id, contest_id: contestId, tile_code });
     if (error) console.error('completion insert', error);
   } else {
     const { error } = await supa
-      .from('completions')
-      .delete()
-      .eq('user_id', user.id)
-      .eq('contest_id', contestId)
-      .eq('tile_code', tile_code);
+      .from('completions').delete()
+      .eq('user_id', user.id).eq('contest_id', contestId).eq('tile_code', tile_code);
     if (error) console.error('completion delete', error);
   }
 }
 
-/* === Claims (Bingo/Blackout) === */
+/* === Claims === */
 async function renderClaimBar(done){
   const bar = claimBarEl;
-  if(!user){ bar.innerHTML=''; return; }
+  if (!user){ bar.innerHTML=''; return; }
+  if (!ACTIVE_CONTEST){ bar.innerHTML=''; return; }
 
   const bingo = hasBingo(done);
   const blackout = hasBlackout(done);
@@ -280,14 +292,14 @@ async function renderClaimBar(done){
   }
 
   if (debugEl){
-    debugEl.textContent = JSON.stringify(
-      { doneCount: done.length, hasBingo: bingo, hasBlackout: blackout }, null, 2
-    );
+    debugEl.textContent = JSON.stringify({ doneCount: done.length, hasBingo: bingo, hasBlackout: blackout }, null, 2);
   }
 }
 
 /* === Render board === */
 async function renderBoard(){
+  if (!isReady()){ boardEl.innerHTML=''; claimBarEl.innerHTML=''; return; }
+
   const labels = await loadUserBoardLabels();
   let done = await loadCompletions();
   const stampUrl = getStampUrl();
@@ -338,26 +350,13 @@ async function renderBoard(){
 async function amIAdmin() {
   if (!user) return false;
   const { data, error } = await supa
-    .from('profiles')
-    .select('is_admin')
-    .eq('id', user.id)
-    .maybeSingle();
+    .from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
   if (error) { console.error('admin check', error); return false; }
   return !!data?.is_admin;
 }
-
-function setAdminMsg(msg) {
-  const el = document.getElementById('adminMsg');
-  if (el) el.textContent = msg;
-}
-
-function linesToTiles(text) {
-  return text.split('\n').map(s => s.trim()).filter(Boolean);
-}
-
-function tilesToLines(arr) {
-  return Array.isArray(arr) ? arr.join('\n') : '';
-}
+function setAdminMsg(msg){ const el = document.getElementById('adminMsg'); if (el) el.textContent = msg; }
+function linesToTiles(text){ return text.split('\n').map(s=>s.trim()).filter(Boolean); }
+function tilesToLines(arr){ return Array.isArray(arr) ? arr.join('\n') : ''; }
 
 async function loadContestIntoAdmin() {
   if (!ACTIVE_CONTEST) return;
@@ -365,55 +364,36 @@ async function loadContestIntoAdmin() {
   $('#contestName').value = ACTIVE_CONTEST.name || '';
   $('#tilesText').value   = tilesToLines(ACTIVE_CONTEST.tiles || []);
 }
-
 async function saveTilesFromAdmin() {
   const contestId = $('#contestId').value.trim();
   const name      = $('#contestName').value.trim();
   const tilesArr  = linesToTiles($('#tilesText').value);
-
   if (!contestId || !name) return setAdminMsg('Contest ID and Name are required.');
   if (tilesArr.length !== 25) return setAdminMsg(`Please enter exactly 25 tiles (you have ${tilesArr.length}).`);
-
-  const { error } = await supa.from('contests').upsert({
-    id: contestId,
-    name,
-    tiles: tilesArr
-  });
+  const { error } = await supa.from('contests').upsert({ id: contestId, name, tiles: tilesArr });
   if (error) return setAdminMsg('Error saving tiles: ' + error.message);
-
   setAdminMsg('Tiles saved.');
-  if (ACTIVE_CONTEST && ACTIVE_CONTEST.id === contestId) {
-    ACTIVE_CONTEST.tiles = tilesArr;
-    await renderBoard();
-  }
+  if (ACTIVE_CONTEST && ACTIVE_CONTEST.id === contestId){ ACTIVE_CONTEST.tiles = tilesArr; await renderBoard(); }
 }
-
 async function uploadImage(fileInputId, targetField) {
   const file = document.getElementById(fileInputId)?.files?.[0];
   if (!file) return setAdminMsg('No file selected.');
-
   const contestId = $('#contestId').value.trim() || (ACTIVE_CONTEST && ACTIVE_CONTEST.id);
   if (!contestId) return setAdminMsg('Contest ID is required first.');
-
-  // PUBLIC bucket named "bingo" in Supabase Storage
-  const ext = (file.name.toLowerCase().endsWith('.png') ? '.png' : '.jpg');
+  const ext  = (file.name.toLowerCase().endsWith('.png') ? '.png' : '.jpg');
   const base = (targetField === 'bg_image_path') ? 'background' : 'stamp';
   const path = `${contestId}/${base}${ext}`;
-
   const { error: upErr } = await supa.storage.from('bingo').upload(path, file, { upsert: true });
   if (upErr) return setAdminMsg('Upload failed: ' + upErr.message);
-
   const { error: updErr } = await supa.from('contests').update({ [targetField]: path }).eq('id', contestId);
   if (updErr) return setAdminMsg('Could not update contest row: ' + updErr.message);
-
   setAdminMsg(`${base} uploaded.`);
-  if (ACTIVE_CONTEST && ACTIVE_CONTEST.id === contestId && targetField === 'bg_image_path') {
+  if (ACTIVE_CONTEST && ACTIVE_CONTEST.id === contestId && targetField === 'bg_image_path'){
     const { data:pub } = supa.storage.from('bingo').getPublicUrl(path);
     const img = document.querySelector('.bg');
     if (img && pub?.publicUrl) img.src = pub.publicUrl;
   }
 }
-
 async function setActiveContest() {
   const contestId = $('#contestId').value.trim();
   if (!contestId) return setAdminMsg('Contest ID required.');
@@ -423,16 +403,13 @@ async function setActiveContest() {
   await loadActiveContest();
   if (user) await renderBoard();
 }
-
 async function showAdminIfNeeded() {
   const panel = document.getElementById('adminPanel');
   if (!panel) return;
-  if (!user) { panel.style.display = 'none'; return; }
-
+  if (!user){ panel.style.display = 'none'; return; }
   const admin = await amIAdmin();
   panel.style.display = admin ? 'block' : 'none';
-
-  if (admin) {
+  if (admin){
     await loadActiveContest();
     await loadContestIntoAdmin();
     document.getElementById('saveTiles').onclick   = saveTilesFromAdmin;
@@ -442,98 +419,80 @@ async function showAdminIfNeeded() {
   }
 }
 
-/* === Auth & boot === */
+/* === Auth buttons === */
 document.getElementById('signin').onclick = async ()=>{
   await supa.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin }});
 };
 document.getElementById('signout').onclick = async ()=>{
-  await supa.auth.signOut();
-  window.location.reload();
+  try{
+    document.getElementById('signout').disabled = true;
+    await supa.auth.signOut();
+    user = null;
+    boardEl.innerHTML=''; claimBarEl.innerHTML=''; statsEl.textContent='';
+  } catch(e){
+    console.error(e); alert('Could not sign out. Try again.');
+  } finally {
+    document.getElementById('signout').disabled = false;
+  }
 };
-
-/* Email magic link login (non-Google) */
+/* Email magic link login */
 if (emailBtn){
   emailBtn.onclick = async ()=>{
     const email = (emailInput?.value || '').trim();
     if (!email){ alert('Enter an email'); return; }
-    const { error } = await supa.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: window.location.origin }
-    });
+    const { error } = await supa.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } });
     if (error){ alert('Could not send login link.'); console.error(error); return; }
     alert('Check your email for the login link.');
   };
 }
 
+/* === Boot (deterministic) === */
 async function boot(){
+  // 1) contest first
+  const contest = await loadActiveContest();
+  if (!contest){ boardEl.innerHTML=''; return; }
+
+  // 2) reflect session
   const { data:{ session } } = await supa.auth.getSession();
   user = session?.user || null;
+
   whoEl.textContent = user ? `Signed in: ${user.user_metadata?.full_name || user.email}` : 'Not signed in';
   debugEl.textContent = session ? JSON.stringify(session, null, 2) : '(none)';
 
-  const contest = await loadActiveContest(); // load info/art first
-  if (!contest) return;
-
-  if (!user) {
-    loadLeaderboard();   // show leaderboard even logged-out
+  // 3) render appropriate state
+  if (!user){
+    await loadLeaderboard();
     return;
   }
-
   await ensureConsent(user.id);
+  await ensureDisplayName(user.id);
   await renderBoard();
   await showAdminIfNeeded();
-  loadLeaderboard();     // paint on first render
+  await loadLeaderboard();
 }
 
-
+/* === Keep in sync on auth changes === */
 supa.auth.onAuthStateChange(async (_evt, sess)=>{
   user = sess?.user || null;
 
-  if (user) {
-    whoEl.textContent = `Signed in as ${user.user_metadata?.full_name || user.email}`;
+  whoEl.textContent = user ? `Signed in: ${user.user_metadata?.full_name || user.email}` : 'Not signed in';
+  debugEl.textContent = sess ? JSON.stringify(sess, null, 2) : '(none)';
+
+  await loadActiveContest();
+
+  if (user){
     await ensureConsent(user.id);
-    await loadActiveContest();
+    await ensureDisplayName(user.id);
     await renderBoard();
     await showAdminIfNeeded();
-    loadLeaderboard();
+    await loadLeaderboard();
   } else {
-    whoEl.textContent = 'Not signed in';
     boardEl.innerHTML = '';
     claimBarEl.innerHTML = '';
     statsEl.textContent = '';
-    const panel = document.getElementById('adminPanel');
-    if (panel) panel.style.display = 'none';
+    document.getElementById('adminPanel')?.style && (document.getElementById('adminPanel').style.display='none');
   }
-   /* === Display Name (username) prompt === */
-async function ensureDisplayName(userId){
-  const { data, error } = await supa
-    .from('profiles')
-    .select('display_name')
-    .eq('id', userId)
-    .maybeSingle();
-  if (error) { console.error('display_name select', error); return; }
-
-  const current = data?.display_name?.trim();
-  if (current) return; // already has a username
-
-  const modal = document.getElementById('nameModal');
-  const input = document.getElementById('nameInput');
-  const save  = document.getElementById('nameSave');
-  modal.style.display = 'flex';
-
-  const suggestion = (user?.email || '').split('@')[0];
-  if (suggestion && !input.value) input.value = suggestion;
-
-  save.onclick = async ()=>{
-    const val = (input.value || '').trim().slice(0, 40);
-    if (!val){ alert('Please enter a name'); return; }
-    const { error: updErr } = await supa.from('profiles').update({ display_name: val }).eq('id', userId);
-    if (updErr){ alert('Could not save name'); console.error(updErr); return; }
-    modal.style.display = 'none';
-    loadLeaderboard(); // refresh after setting
-  };
-}
-
 });
 
 boot();
+
