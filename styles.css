@@ -1,122 +1,116 @@
 /* =========================
-   LAPCo Bingo — Clean CSS
+   LAPCo Bingo — Responsive CSS
+   (Drop-in replacement)
    ========================= */
 
-/* ---------- Global variables (your main knobs) ---------- */
+/* ---------- Global variables you can tweak ---------- */
 :root{
-  /* Overlay placement over the image */
-  --board-top: 26%;       /* push grid down from top of artwork */
-  --board-left: 50%;
-  --board-width: 85%;     /* overall grid width relative to artwork */
+  /* Base desktop-ish alignment */
+  --board-top: 26%;        /* vertical offset where the 5×5 grid starts on your artwork */
+  --board-width: 84%;      /* overlay grid width relative to the image */
+  --gap-x-pct: 1.7%;       /* horizontal gap BETWEEN tiles (as % of grid width) */
+  --gap-y-pct: 1.7%;       /* vertical gap BETWEEN tiles (as % of grid width) */
+  --board-scale-y: 0.958;  /* squash/stretch vertically (1.00 = none) */
 
-  /* Fine alignment */
-  --board-scale-x: 1;     /* usually 1 (unitless) */
-  --board-scale-y: 0.96;  /* slight vertical squeeze to match print (unitless) */
-  --board-shift-px: 0px;  /* nudge left/right in pixels if ever needed */
-
-  /* Tile spacing (PERCENT so it scales with the board) */
-  --gap-x: 1.8%;          /* horizontal gap between tiles */
-  --gap-y: 1.8%;          /* vertical gap between tiles */
-
-  /* Tile text */
-  --tile-font-min: 12px;
-  --tile-font-ideal: 2.6vw;
+  /* Typography */
+  --tile-font-min: 11px;
+  --tile-font-ideal: 2.6vw;  /* scales with device width */
   --tile-font-max: 16px;
 
-  /* Stamp scale */
+  /* Stamp sizing (as % of tile) */
   --stamp-size: 80%;
 }
 
-/* ---------- Resets & base ---------- */
-*{ box-sizing: border-box }
-html, body { height: 100%; margin: 0 }
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
 body {
   font-family: system-ui, Segoe UI, Arial, sans-serif;
   color: #fff;
   background: #0b0b12;
 }
 
-/* ---------- Header ---------- */
+/* ---------- Header / top bar ---------- */
 .top{
   display:flex; align-items:center; justify-content:space-between;
   padding:12px 16px; background:#151526; border-bottom:1px solid #222;
 }
 .title{ font-weight:800; letter-spacing:.5px }
 .actions{ display:flex; align-items:center; gap:10px; flex-wrap:wrap }
-button{ padding:10px 14px; border-radius:10px; border:none; background:#6d4bff; color:#fff; font-weight:700; cursor:pointer }
+button{
+  padding:10px 14px; border-radius:10px; border:none;
+  background:#6d4bff; color:#fff; font-weight:700; cursor:pointer
+}
 button.ghost{ background:#2a2a44 }
 
-/* ---------- Layout ---------- */
+/* ---------- Page layout ---------- */
 main{ max-width:960px; margin:0 auto; padding:16px }
 .status{ display:flex; justify-content:space-between; align-items:center; margin:10px 0 20px; color:#d6d6ff }
 
-/* ---------- Artwork + overlay ---------- */
+/* ---------- Artwork + overlay container ---------- */
 .bg-wrap{ position:relative; max-width:900px; margin:0 auto; }
 .bg{ display:block; width:100%; height:auto; }
 
-/* ---------- Overlay grid (single, authoritative rule) ---------- */
+/* ---------- 5×5 overlay grid (transparent) ---------- */
 #board.board{
-  position: absolute;
+  position:absolute;
   top: var(--board-top);
-  left: calc(var(--board-left) + var(--board-shift-px));
-  transform: translateX(-50%) scale(var(--board-scale-x), var(--board-scale-y));
+  left: 50%;
+  transform: translateX(-50%) scaleY(var(--board-scale-y));
   transform-origin: top center;
-  width: var(--board-width);
 
+  width: var(--board-width);
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  column-gap: var(--gap-x);
-  row-gap: var(--gap-y);
 
-  /* Make sure nothing “frosts” the art */
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
+  /* Gaps in % so they scale exactly with the image */
+  column-gap: var(--gap-x-pct);
+  row-gap:    var(--gap-y-pct);
+
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
-/* ---------- Tiles: invisible boxes; labels & stamp inside ---------- */
-.tile{
+/* ---------- Tiles: invisible squares, label centered ---------- */
+#board .tile{
   aspect-ratio: 1 / 1;
   position: relative;
+  background: transparent;
+  border: none;
+  margin: 0;
+  padding: 0;
 
-  /* Keep overlay perfectly clear */
-  background: transparent !important;
-  border: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
-
-  /* Center labels and make readable */
-  display: flex; align-items: center; justify-content: center; text-align: center;
+  display:flex; align-items:center; justify-content:center;
+  text-align:center;
 }
-.tile > span{
-  max-width: 95%;
-  font-weight: 800;
-  line-height: 1.15;
+
+#board .tile > span{
+  display:block;
+  max-width:95%;
+  font-weight:800;
+  line-height:1.15;
   font-size: clamp(var(--tile-font-min), var(--tile-font-ideal), var(--tile-font-max));
   word-break: break-word;
-  overflow-wrap: anywhere;
+  overflow-wrap:anywhere;
 }
 
-/* no checkmark bubbles */
-.tile .check{ display:none !important; }
+/* Hide old checkmark UI */
+#board .tile .check{ display:none !important; }
 
-/* Stamp pseudo-element (added as a child in JS; keep size consistent) */
-.tile .stamp{
-  position: absolute; inset: 0;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: var(--stamp-size);
-  opacity: .85;
+/* Stamp overlay when a tile is done */
+#board .tile.done::after{
+  content:"";
+  position:absolute; inset:0;
+  background: center/var(--stamp-size) no-repeat;
+  opacity:.85;
   transform: rotate(-8deg);
-  pointer-events: none;
+  pointer-events:none;
 }
 
-/* ---------- Prizes card (unchanged) ---------- */
+/* ---------- Prizes / sections ---------- */
 .prizes{
-  max-width:900px;
-  margin:12px auto 0;
-  padding:12px 16px;
+  max-width:900px; margin:12px auto 0; padding:12px 16px;
   background:rgba(255,255,255,.06);
   border:1px solid rgba(255,255,255,.12);
   border-radius:12px;
@@ -124,32 +118,59 @@ main{ max-width:960px; margin:0 auto; padding:16px }
 .prizes h3{ margin:0 0 6px; font-size:1rem; letter-spacing:.3px }
 .prizes ul{ margin:0; padding-left:18px; line-height:1.35; font-size:.95rem }
 
-/* ---------- Mobile tuning (small, safe nudges) ---------- */
-@media (max-width: 480px){
+/* ---------- Optional: debugging overlay ---------- */
+body.debug #board .tile{ outline:2px dashed rgba(255,0,180,.5); }
+body.debug #board .tile.done::after{ opacity:.25 }
+
+/* =======================================================
+   Responsive tuning by size ranges (NOT by device model)
+   ======================================================= */
+
+/* Extra-narrow phones (≤360px) */
+@media (max-width: 360px){
   :root{
-    /* small phones: widen a touch and ease spacing */
+    --board-top: 27.2%;
     --board-width: 86%;
-    --gap-x: 2.0%;
-    --gap-y: 1.9%;
-    --tile-font-min: 11px;
-    --tile-font-ideal: 2.8vw;
-    --tile-font-max: 15px;
-    /* If rows are slightly too tall or short, nudge this by 0.002–0.01 */
+    --gap-x-pct: 1.9%;
+    --gap-y-pct: 1.9%;
     --board-scale-y: 0.955;
+
+    --tile-font-min: 10px;
+    --tile-font-ideal: 3.2vw;
+    --tile-font-max: 15px;
   }
 }
 
-/* Mid-range (big phones / small tablets) */
+/* Typical phones (≤480px) */
+@media (min-width: 361px) and (max-width: 480px){
+  :root{
+    --board-top: 26.8%;
+    --board-width: 85%;
+    --gap-x-pct: 1.85%;
+    --gap-y-pct: 1.85%;
+    --board-scale-y: 0.956;
+  }
+}
+
+/* Large phones / small tablets portrait (481–768px) */
 @media (min-width: 481px) and (max-width: 768px){
   :root{
+    --board-top: 26.4%;
     --board-width: 84%;
-    --gap-x: 1.9%;
-    --gap-y: 1.9%;
+    --gap-x-pct: 1.75%;
+    --gap-y-pct: 1.75%;
     --board-scale-y: 0.958;
   }
 }
 
-/* ---------- Debug helper (optional) ---------- */
-/* Add class="debug" on <body> temporarily to see tile outlines */
-body.debug .tile{ outline: 2px dashed rgba(255,0,180,.5); }
-body.debug .tile .stamp{ opacity:.25; }
+/* Tablets landscape and up (≥769px) — keep your desktop defaults or nudge slightly */
+@media (min-width: 769px){
+  :root{
+    --board-top: 26%;
+    --board-width: 84%;
+    --gap-x-pct: 1.7%;
+    --gap-y-pct: 1.7%;
+    --board-scale-y: 0.958;
+  }
+}
+
