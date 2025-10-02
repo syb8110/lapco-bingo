@@ -9,13 +9,13 @@
 </head>
 <body>
 
-  <!-- Media Waiver -->
+  <!-- Waiver modal -->
   <div id="consentModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center">
     <div style="background:#111;border:1px solid #333;border-radius:12px;max-width:520px;width:90%;padding:18px">
       <h3 style="margin:0 0 8px">Media Waiver</h3>
       <p style="margin:0 0 12px;line-height:1.35">
-        By participating in contests and games, I consent to LAPCo using my submitted photos, videos, display name, and progress
-        for promotional purposes (website, social media, in-studio). Participation is voluntary—join only if you agree.
+        By participating in contests and games, I consent to LAPCo using my submitted photos, videos, display name,
+        and progress for promotional purposes (website, social media, in-studio). Participation is voluntary—join only if you agree.
       </p>
       <button id="consentAgree" style="padding:10px 14px;border-radius:10px;border:none;background:#6d4bff;color:#fff;font-weight:800;cursor:pointer">I Agree</button>
     </div>
@@ -26,8 +26,8 @@
     <div class="actions">
       <div id="who">Not signed in</div>
 
-      <!-- Email magic-link login -->
-      <input id="emailInput" type="email" placeholder="you@example.com" class="env" style="min-width:220px" />
+      <!-- Email login (magic link) -->
+      <input id="emailInput" type="email" placeholder="you@example.com" class="env" />
       <button id="emailLogin">Email me a login link</button>
 
       <!-- Google login -->
@@ -60,7 +60,7 @@
     </section>
 
     <!-- Instructions -->
-    <section style="max-width:900px;margin:24px auto 0;padding:16px;background:#111;border:1px solid #333;border-radius:12px">
+    <section class="card">
       <h3 style="margin-top:0">How to Play</h3>
       <ol style="line-height:1.5;margin:0;padding-left:18px">
         <li>Sign in and complete squares that match your activities.</li>
@@ -74,15 +74,14 @@
     </section>
 
     <!-- Leaderboard -->
-    <section style="max-width:900px;margin:16px auto 0;padding:16px;background:#111;border:1px solid #333;border-radius:12px">
+    <section class="card">
       <h3 style="margin-top:0">Leaderboard (Top 10)</h3>
       <div id="leaderboard"><div style="opacity:.7">Loading…</div></div>
     </section>
 
-    <!-- ADMIN PANEL (visible only to admins) -->
-    <section id="adminPanel" style="display:none; max-width:900px; margin:24px auto; padding:16px; background:#111; border:1px solid #333; border-radius:12px">
+    <!-- ADMIN PANEL (shows only if profiles.is_admin = true) -->
+    <section id="adminPanel" style="display:none;" class="card">
       <h3 style="margin-top:0">Admin: Manage Contest</h3>
-
       <div style="display:grid; gap:12px">
         <label>Contest ID
           <input id="contestId" class="env" placeholder="October2025">
@@ -92,7 +91,7 @@
         </label>
 
         <label>Tiles (enter exactly 25 lines)</label>
-        <textarea id="tilesText" rows="10" style="width:100%; background:#0f0f18; color:#eaeaff; border:1px solid #3b3b55; border-radius:8px; padding:8px"></textarea>
+        <textarea id="tilesText" rows="10" class="textarea"></textarea>
 
         <div style="display:flex; gap:12px; flex-wrap:wrap">
           <div>
@@ -116,7 +115,7 @@
       </div>
     </section>
 
-    <!-- Display Name (leaderboard name) -->
+    <!-- Display name modal -->
     <div id="nameModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center">
       <div style="background:#111;border:1px solid #333;border-radius:12px;max-width:420px;width:92%;padding:18px">
         <h3 style="margin:0 0 8px">Pick a display name</h3>
@@ -137,4 +136,3 @@
   <script src="./app.js"></script>
 </body>
 </html>
-
