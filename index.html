@@ -9,7 +9,7 @@
 </head>
 <body>
 
-  <!-- Waiver modal -->
+  <!-- Media Waiver -->
   <div id="consentModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center">
     <div style="background:#111;border:1px solid #333;border-radius:12px;max-width:520px;width:90%;padding:18px">
       <h3 style="margin:0 0 8px">Media Waiver</h3>
@@ -26,7 +26,7 @@
     <div class="actions">
       <div id="who">Not signed in</div>
 
-      <!-- Email login (magic link) -->
+      <!-- Email magic-link login -->
       <input id="emailInput" type="email" placeholder="you@example.com" class="env" style="min-width:220px" />
       <button id="emailLogin">Email me a login link</button>
 
@@ -41,8 +41,11 @@
       <div id="stats"></div>
     </section>
 
+    <!-- Artwork container with fixed aspect ratio -->
     <div class="bg-wrap">
-      <img src="/october-halloween-bingo.png" alt="October Bingo" class="bg" />
+      <!-- Art is a background on this div (no <img>) -->
+      <div class="art" role="img" aria-label="Monthly Bingo artwork"></div>
+      <!-- Grid overlays inside the same box -->
       <div id="board" class="board"></div>
     </div>
 
@@ -56,7 +59,7 @@
       </ul>
     </section>
 
-    <!-- ===== Instructions ===== -->
+    <!-- Instructions -->
     <section style="max-width:900px;margin:24px auto 0;padding:16px;background:#111;border:1px solid #333;border-radius:12px">
       <h3 style="margin-top:0">How to Play</h3>
       <ol style="line-height:1.5;margin:0;padding-left:18px">
@@ -70,15 +73,13 @@
       </p>
     </section>
 
-    <!-- ===== Leaderboard ===== -->
+    <!-- Leaderboard -->
     <section style="max-width:900px;margin:16px auto 0;padding:16px;background:#111;border:1px solid #333;border-radius:12px">
       <h3 style="margin-top:0">Leaderboard (Top 10)</h3>
-      <div id="leaderboard">
-        <div style="opacity:.7">Loading…</div>
-      </div>
+      <div id="leaderboard"><div style="opacity:.7">Loading…</div></div>
     </section>
 
-    <!-- ===== ADMIN PANEL (shows only for admins) ===== -->
+    <!-- ADMIN PANEL (visible only to admins) -->
     <section id="adminPanel" style="display:none; max-width:900px; margin:24px auto; padding:16px; background:#111; border:1px solid #333; border-radius:12px">
       <h3 style="margin-top:0">Admin: Manage Contest</h3>
 
@@ -114,8 +115,8 @@
         <div id="adminMsg" style="opacity:.9"></div>
       </div>
     </section>
-    
-    <!-- ===== Name Modal ===== -->
+
+    <!-- Display Name (leaderboard name) -->
     <div id="nameModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center">
       <div style="background:#111;border:1px solid #333;border-radius:12px;max-width:420px;width:92%;padding:18px">
         <h3 style="margin:0 0 8px">Pick a display name</h3>
