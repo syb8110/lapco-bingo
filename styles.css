@@ -135,3 +135,70 @@ body.debug .tile.done::after{ opacity:.25; }
     row-gap:    clamp(4px, 1.2vw, 10px) !important;
   }
 }
+/* ===== PHONE ALIGNMENT PRECISION (non-destructive overrides) ===== */
+
+/* Base variables (desktop-ish defaults). Tweak these only if needed. */
+:root{
+  --board-top: 26%;          /* vertical start of the grid over the image */
+  --board-width: 83%;        /* overall width of the overlay grid */
+  --gap-x-pct: 1.6%;         /* horizontal gap BETWEEN tiles (as % of grid width) */
+  --gap-y-pct: 1.6%;         /* vertical gap BETWEEN tiles (also % of grid width) */
+  --board-scale-y: 0.96;     /* unitless compression/stretch vertically (1.00 = none) */
+}
+
+/* Force the overlay grid to respect our variables */
+#board.board{
+  position: absolute;
+  top: var(--board-top) !important;
+  left: 50% !important;
+  transform: translateX(-50%) scaleY(var(--board-scale-y)) !important;
+  width: var(--board-width) !important;
+
+  /* Gaps in % so they scale exactly with the artwork */
+  column-gap: var(--gap-x-pct) !important;
+  row-gap:    var(--gap-y-pct) !important;
+
+  /* Kill any accidental frost/backgrounds */
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Tiles: no padding/border so overlay squares match printed squares exactly */
+#board .tile{
+  aspect-ratio: 1 / 1;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+/* Stamp stays proportional */
+#board .tile .stamp{
+  background-size: 80% !important;
+}
+
+/* ===== Phone tuning: start with these and adjust by tiny nudges (±0.2%) ===== */
+@media (max-width: 480px){
+  :root{
+    --board-top: 27%;       /* nudge down a bit on phones */
+    --board-width: 84%;     /* widen slightly if columns sit inside the boxes */
+    --gap-x-pct: 1.9%;      /* small increases usually help on narrow phones */
+    --gap-y-pct: 1.85%;
+    --board-scale-y: 0.955; /* compress vertically a hair to match rows */
+  }
+}
+
+/* Mid-range (big phones/small tablets in portrait) */
+@media (min-width: 481px) and (max-width: 768px){
+  :root{
+    --board-top: 26.5%;
+    --board-width: 83.5%;
+    --gap-x-pct: 1.7%;
+    --gap-y-pct: 1.7%;
+    --board-scale-y: 0.958;
+  }
+}
+
+/* Debug helper (optional): outline tiles to see alignment */
+body.debug #board .tile{ outline: 2px dashed rgba(255,0,180,.5); }
