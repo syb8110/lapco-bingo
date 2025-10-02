@@ -504,6 +504,36 @@ supa.auth.onAuthStateChange(async (_evt, sess)=>{
     const panel = document.getElementById('adminPanel');
     if (panel) panel.style.display = 'none';
   }
+   /* === Display Name (username) prompt === */
+async function ensureDisplayName(userId){
+  const { data, error } = await supa
+    .from('profiles')
+    .select('display_name')
+    .eq('id', userId)
+    .maybeSingle();
+  if (error) { console.error('display_name select', error); return; }
+
+  const current = data?.display_name?.trim();
+  if (current) return; // already has a username
+
+  const modal = document.getElementById('nameModal');
+  const input = document.getElementById('nameInput');
+  const save  = document.getElementById('nameSave');
+  modal.style.display = 'flex';
+
+  const suggestion = (user?.email || '').split('@')[0];
+  if (suggestion && !input.value) input.value = suggestion;
+
+  save.onclick = async ()=>{
+    const val = (input.value || '').trim().slice(0, 40);
+    if (!val){ alert('Please enter a name'); return; }
+    const { error: updErr } = await supa.from('profiles').update({ display_name: val }).eq('id', userId);
+    if (updErr){ alert('Could not save name'); console.error(updErr); return; }
+    modal.style.display = 'none';
+    loadLeaderboard(); // refresh after setting
+  };
+}
+
 });
 
 boot();
